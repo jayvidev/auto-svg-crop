@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://nextshadcn-starter.vercel.app">
+  <a href="https://auto-svg-crop.vercel.app">
     <img src="./public/readme.jpg" alt="Preview">
   </a>
   <p></p>
