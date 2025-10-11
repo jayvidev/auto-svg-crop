@@ -13,13 +13,10 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Next.js + shadcn/ui Starter',
-  description: 'Starter template with Next.js 15, Tailwind CSS v4, and shadcn/ui.',
+  title: 'Recortador SVG - Elimina espacio vacío automáticamente',
+  description: 'Herramienta para recortar SVGs y eliminar espacio vacío usando getBBox()',
   icons: {
-    icon: [
-      { url: '/favicon-light.svg', media: '(prefers-color-scheme: light)', type: 'image/svg+xml' },
-      { url: '/favicon-dark.svg', media: '(prefers-color-scheme: dark)', type: 'image/svg+xml' },
-    ],
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
   },
 }
 
