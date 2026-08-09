@@ -50,22 +50,14 @@ const getFrame = (svg: SVGSVGElement, bbox: Box, precision: number): Box => {
 
 const SHAPES = 'path, rect, circle, ellipse, line, polyline, polygon, text, image, use'
 
-/** Definitions are never painted where they are declared. */
 const HIDDEN_PARENTS = 'defs, clipPath, mask, symbol, pattern, marker'
 
-/**
- * `getBBox()` measures geometry, not ink: a `fill="none"` rect still counts,
- * and plenty of exported SVGs ship exactly that as a full-size frame. So the
- * box is the union of the elements that actually paint something.
- */
 const paints = (element: SVGGraphicsElement) => {
   if (element.closest(HIDDEN_PARENTS)) return false
 
   const style = getComputedStyle(element)
   if (style.display === 'none' || style.visibility === 'hidden') return false
   if (Number(style.opacity) === 0) return false
-
-  // <image> and <use> paint their own content, no fill/stroke involved.
   if (element.tagName === 'image' || element.tagName === 'use') return true
 
   const filled = style.fill !== 'none' && Number(style.fillOpacity) !== 0
@@ -77,7 +69,6 @@ const paints = (element: SVGGraphicsElement) => {
   return filled || stroked
 }
 
-/** Element box mapped into the root SVG's own coordinate system. */
 const boxInRootSpace = (element: SVGGraphicsElement, root: SVGSVGElement): Box | null => {
   const rootMatrix = root.getScreenCTM()
   const elementMatrix = element.getScreenCTM()
@@ -121,8 +112,6 @@ const measure = (svg: SVGSVGElement): Box => {
 export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
   const container = document.createElement('div')
   container.setAttribute('aria-hidden', 'true')
-  // Off-screen but fully rendered: `visibility:hidden` inherits and would make
-  // every element look unpainted to getComputedStyle.
   container.style.cssText = 'position:fixed;top:0;left:-99999px;opacity:0;pointer-events:none'
   container.innerHTML = svgCode
 
