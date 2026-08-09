@@ -1,11 +1,16 @@
+<script module lang="ts">
+  let initialHeroAnimated = false
+</script>
+
 <script lang="ts">
+  import { onMount, type Snippet } from 'svelte'
+
   import CopyIcon from '@lucide/svelte/icons/copy'
   import DownloadIcon from '@lucide/svelte/icons/download'
   import FileUpIcon from '@lucide/svelte/icons/file-up'
   import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw'
   import SparklesIcon from '@lucide/svelte/icons/sparkles'
   import UploadIcon from '@lucide/svelte/icons/upload'
-  import type { Snippet } from 'svelte'
   import { toast } from 'svelte-sonner'
 
   import CodeBlock from '@/components/codeBlock.svelte'
@@ -144,11 +149,24 @@
     download({ content: output, filename, mimeType: 'image/svg+xml' })
   }
 
+  let hasAnimatedHero = $state(initialHeroAnimated)
+
+  onMount(() => {
+    if (!initialHeroAnimated) {
+      initialHeroAnimated = true
+      const timer = setTimeout(() => {
+        hasAnimatedHero = true
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  })
+
   /**
-   * Staggered entrance. CSS animations instead of Svelte transitions: `in:`
-   * does not run on hydration, so a reload would show no animation at all.
+   * Staggered entrance only on initial page load.
    */
-  const enter = 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
+  const heroEnter = $derived(
+    hasAnimatedHero ? '' : 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
+  )
 
   const reset = () => {
     source = ''
@@ -243,14 +261,14 @@
     <div class="pointer-events-none absolute inset-0 -z-10 hero-glow" aria-hidden="true"></div>
 
     <section class="space-y-2 pb-8 text-center">
-      <h1 class={cn('text-2xl font-semibold tracking-tight text-balance sm:text-4xl', enter)}>
+      <h1 class={cn('text-2xl font-semibold tracking-tight text-balance sm:text-4xl', heroEnter)}>
         Trim the empty space around your SVGs
       </h1>
       <p
         class={cn(
           'text-sm text-neutral-500 text-pretty sm:text-base dark:text-neutral-400',
-          enter,
-          'delay-100'
+          heroEnter,
+          !hasAnimatedHero && 'delay-100'
         )}
       >
         Measures the real bounding box with
@@ -259,11 +277,11 @@
       </p>
     </section>
 
-    <div class={cn(enter, 'delay-200')}>
+    <div class={cn(heroEnter, !hasAnimatedHero && 'delay-200')}>
       <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
     </div>
 
-    <div class={cn('mt-4 flex justify-center', enter, 'delay-300')}>
+    <div class={cn('mt-4 flex justify-center', heroEnter, !hasAnimatedHero && 'delay-300')}>
       <Button variant="ghost" size="sm" onclick={() => process(exampleSvg, 'example.svg')}>
         <SparklesIcon size={14} strokeWidth={1.5} />
         <span>Try it with an example</span>
@@ -271,7 +289,7 @@
     </div>
   </div>
 {:else}
-  <div class={cn('space-y-5 pt-6', enter)}>
+  <div class="space-y-5 pt-6 animate-in fade-in-0 duration-300">
     <!-- Toolbar -->
     <div
       class="sticky top-16 z-40 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white/90 p-3 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:bg-neutral-900/90"

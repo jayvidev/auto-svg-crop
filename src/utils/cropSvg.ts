@@ -9,13 +9,10 @@ export interface CropSvgResult {
   svg: string
   originalViewBox: string | null
   croppedViewBox: string
-  /** Coordinate system the original SVG was drawn in, used to align previews. */
   frame: Box
-  /** Bounding box of the visible content, inside `frame` coordinates. */
   crop: Box
   width: number
   height: number
-  /** How much of the original canvas area was empty space, 0-1. */
   trimmed: number
 }
 
@@ -29,16 +26,19 @@ const round = (value: number, precision: number) => {
   return Math.round(value * factor) / factor
 }
 
+const roundBox = (box: Box, precision: number): Box => ({
+  x: round(box.x, precision),
+  y: round(box.y, precision),
+  width: round(box.width, precision),
+  height: round(box.height, precision),
+})
+
 const boxToViewBox = (box: Box) => `${box.x} ${box.y} ${box.width} ${box.height}`
 
-/**
- * The coordinate system the artwork lives in: the declared viewBox, or the
- * declared width/height, or - as a last resort - the content itself.
- */
-const getFrame = (svg: SVGSVGElement, bbox: Box): Box => {
+const getFrame = (svg: SVGSVGElement, bbox: Box, precision: number): Box => {
   const viewBox = svg.viewBox.baseVal
   if (viewBox && viewBox.width > 0 && viewBox.height > 0) {
-    return { x: viewBox.x, y: viewBox.y, width: viewBox.width, height: viewBox.height }
+    return roundBox(viewBox, precision)
   }
 
   const width = svg.width.baseVal.value
@@ -47,6 +47,9 @@ const getFrame = (svg: SVGSVGElement, bbox: Box): Box => {
 
   return bbox
 }
+
+const measure = (svg: SVGSVGElement): Box =>
+  svg.getBBox({ clipped: true, fill: true, stroke: true, markers: true })
 
 export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
   const container = document.createElement('div')
@@ -64,19 +67,14 @@ export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
 
   try {
     const originalViewBox = svg.getAttribute('viewBox')
-    const bbox = svg.getBBox()
+    const bbox = measure(svg)
 
     if (!bbox.width || !bbox.height) {
       throw new Error('The SVG has no visible content to crop')
     }
 
-    const crop: Box = {
-      x: round(bbox.x, precision),
-      y: round(bbox.y, precision),
-      width: round(bbox.width, precision),
-      height: round(bbox.height, precision),
-    }
-    const frame = getFrame(svg, crop)
+    const crop = roundBox(bbox, precision)
+    const frame = getFrame(svg, crop, precision)
     const croppedViewBox = boxToViewBox(crop)
 
     svg.setAttribute('viewBox', croppedViewBox)
