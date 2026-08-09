@@ -4,6 +4,7 @@
   import type { Snippet } from 'svelte'
 
   // Layout:
+  import Footer from '@/components/layout/footer.svelte'
   import Header from '@/components/layout/header.svelte'
   import Sonner from '@/components/ui/sonner/sonner.svelte'
 
@@ -13,9 +14,15 @@
   let { children }: { children?: Snippet } = $props()
 </script>
 
+<div
+  class="pointer-events-none fixed inset-0 -z-10 text-neutral-300 dot-grid dark:text-neutral-800"
+  aria-hidden="true"
+></div>
+
 <ModeWatcher />
 <Sonner />
 <Header />
-<main class="mx-auto w-full max-w-6xl px-4 pb-16">
+<main class="mx-auto w-full max-w-6xl px-4">
   {@render children?.()}
 </main>
+<Footer />

@@ -231,12 +231,7 @@
 {/snippet}
 
 {#if !result}
-  <div class="relative flex min-h-[calc(100svh-8rem)] flex-col justify-center pb-10">
-    <div
-      class="pointer-events-none absolute inset-0 -z-10 text-neutral-300 dot-grid dark:text-neutral-800"
-      aria-hidden="true"
-    ></div>
-
+  <div class="flex min-h-[calc(100svh-8rem)] flex-col justify-center pb-10">
     <section class="space-y-2 pb-8 text-center">
       <h1 class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
         Trim the empty space around your SVGs
