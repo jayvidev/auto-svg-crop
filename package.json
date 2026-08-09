@@ -19,7 +19,10 @@
     "check:lint": "eslint ."
   },
   "dependencies": {
+    "@shikijs/langs": "4.4.2",
+    "@shikijs/themes": "4.4.2",
     "mode-watcher": "1.1.0",
+    "shiki": "4.4.2",
     "svgo": "4.0.2"
   },
   "devDependencies": {

@@ -32,6 +32,23 @@
     'Courier New', monospace, 'Apple Color Emoji';
 }
 
+/* Shiki (light + dark themes in one output) */
+.shiki-block .shiki,
+.shiki-block .shiki span {
+  background-color: transparent !important;
+}
+
+.shiki-block .shiki code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: transparent !important;
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar {
   width: 5px;

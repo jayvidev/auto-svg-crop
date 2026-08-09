@@ -8,6 +8,7 @@
   import type { Snippet } from 'svelte'
   import { toast } from 'svelte-sonner'
 
+  import CodeBlock from '@/components/codeBlock.svelte'
   import Dropzone from '@/components/dropzone.svelte'
   import SvgPreview from '@/components/svgPreview.svelte'
   import { Button } from '@/components/ui/button'
@@ -29,7 +30,7 @@
   let source = $state('')
   let filename = $state('cropped.svg')
   let result = $state<CropSvgResult | null>(null)
-  let sameScale = $state(true)
+  let showCropArea = $state(true)
 
   const output = $derived(
     result ? ($settings.optimizeSvgs ? optimizeSvg({ svgCode: result.svg }) : result.svg) : ''
@@ -181,18 +182,13 @@
   <SvgPreview
     code={source}
     viewBox={result?.frame}
-    overlay={result?.crop}
+    overlay={showCropArea ? result?.crop : null}
     class="checkerboard h-72"
   />
 {/snippet}
 
 {#snippet after()}
-  <SvgPreview
-    code={output}
-    viewBox={sameScale ? result?.frame : null}
-    overlay={sameScale ? result?.crop : null}
-    class="checkerboard h-72"
-  />
+  <SvgPreview code={output} overlay={null} class="checkerboard h-72" />
 {/snippet}
 
 {#snippet stat(label: string, value: string)}
@@ -216,8 +212,7 @@
         <span>Copy</span>
       </Button>
     </div>
-    <pre
-      class="max-h-96 overflow-auto p-4 font-mono text-xs whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">{output}</pre>
+    <CodeBlock code={output} class="max-h-96" />
   </div>
 {/snippet}
 
@@ -293,16 +288,20 @@
         </TabsList>
         <label
           class="flex items-center gap-2.5 text-sm"
-          title="Render both previews in the original coordinate system"
+          title="Outline the bounding box and dim the empty space being removed"
         >
-          <Switch bind:checked={sameScale} />
-          <span>Same scale</span>
+          <Switch bind:checked={showCropArea} />
+          <span>Show crop area</span>
         </label>
       </div>
 
       <TabsContent value="compare" class="space-y-5">
         <div class="grid gap-5 lg:grid-cols-2">
-          {@render card('Before', `${result.frame.width} × ${result.frame.height}`, before)}
+          {@render card(
+            'Before',
+            `${result.frame.width} × ${result.frame.height} · ${Math.round(result.trimmed * 100)}% empty`,
+            before
+          )}
           {@render card('After', `${result.width} × ${result.height}`, after)}
         </div>
 
