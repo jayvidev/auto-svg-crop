@@ -1,10 +1,9 @@
 <script lang="ts">
   import ScissorsIcon from '@lucide/svelte/icons/scissors'
 
-  import Github from '@/components/logos/github.svelte'
+  import GithubLink from '@/components/githubLink.svelte'
   import ModeToggle from '@/components/modeToggle.svelte'
   import { buttonVariants } from '@/components/ui/button'
-  import ExternalLink from '@/components/ui/links/external-link.svelte'
   import { cn } from '@/utils/cn'
 </script>
 
@@ -15,16 +14,7 @@
       <span>Auto SVG Crop</span>
     </a>
     <div class="flex h-5 items-center space-x-1">
-      <ExternalLink
-        href="https://github.com/jayvidev/auto-svg-crop"
-        title="View on GitHub"
-        className={cn(
-          buttonVariants({ variant: 'ghost', size: 'icon' }),
-          'hover:bg-neutral-200 dark:hover:bg-neutral-800'
-        )}
-      >
-        <Github size={18} />
-      </ExternalLink>
+      <GithubLink />
       <ModeToggle
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),

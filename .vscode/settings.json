@@ -5,10 +5,8 @@
     "source.fixAll.eslint": "explicit"
   },
   "editor.formatOnSave": true,
-
   "eslint.validate": ["javascript", "typescript", "svelte"],
   "tailwindCSS.experimental.classRegex": [["[\"'`]([^\"'`]*).*?[\"'`]"]],
-
   "[svelte]": {
     "editor.defaultFormatter": "svelte.svelte-vscode",
     "editor.insertSpaces": true,
@@ -36,12 +34,14 @@
   },
   "files.exclude": {
     "**/.svelte-kit": true,
+    "**/.vercel": true,
     "**/build": true,
     "**/dist": true,
     "**/node_modules": true
   },
   "search.exclude": {
     "**/.svelte-kit": true,
+    "**/.vercel": true,
     "**/build": true,
     "**/dist": true,
     "**/node_modules": true

@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://auto-svg-crop.vercel.app">
+  <a href="https://auto-svg-crop.jayvi.dev">
     <img src="./static/images/readme.jpg" alt="Preview">
   </a>
   <p></p>

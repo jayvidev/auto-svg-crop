@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://auto-svg-crop.jayvi.dev/sitemap.xml
