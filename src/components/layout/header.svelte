@@ -10,7 +10,7 @@
 
 <header class="sticky top-0 z-50 w-full bg-neutral-100 py-3 md:py-4 dark:bg-neutral-950">
   <nav class="mx-auto flex w-full max-w-6xl items-center justify-between px-4">
-    <a href="/" class="flex items-center space-x-2 text-lg font-medium tracking-tight">
+    <a href="/" class="flex items-center space-x-2 text-base sm:text-lg font-medium tracking-tight">
       <ScissorsIcon size={20} strokeWidth={1.5} />
       <span>Auto SVG Crop</span>
     </a>
