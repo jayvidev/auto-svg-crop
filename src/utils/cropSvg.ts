@@ -48,14 +48,82 @@ const getFrame = (svg: SVGSVGElement, bbox: Box, precision: number): Box => {
   return bbox
 }
 
-const measure = (svg: SVGSVGElement): Box =>
-  svg.getBBox({ clipped: true, fill: true, stroke: true, markers: true })
+const SHAPES = 'path, rect, circle, ellipse, line, polyline, polygon, text, image, use'
+
+/** Definitions are never painted where they are declared. */
+const HIDDEN_PARENTS = 'defs, clipPath, mask, symbol, pattern, marker'
+
+/**
+ * `getBBox()` measures geometry, not ink: a `fill="none"` rect still counts,
+ * and plenty of exported SVGs ship exactly that as a full-size frame. So the
+ * box is the union of the elements that actually paint something.
+ */
+const paints = (element: SVGGraphicsElement) => {
+  if (element.closest(HIDDEN_PARENTS)) return false
+
+  const style = getComputedStyle(element)
+  if (style.display === 'none' || style.visibility === 'hidden') return false
+  if (Number(style.opacity) === 0) return false
+
+  // <image> and <use> paint their own content, no fill/stroke involved.
+  if (element.tagName === 'image' || element.tagName === 'use') return true
+
+  const filled = style.fill !== 'none' && Number(style.fillOpacity) !== 0
+  const stroked =
+    style.stroke !== 'none' &&
+    Number(style.strokeOpacity) !== 0 &&
+    parseFloat(style.strokeWidth) > 0
+
+  return filled || stroked
+}
+
+/** Element box mapped into the root SVG's own coordinate system. */
+const boxInRootSpace = (element: SVGGraphicsElement, root: SVGSVGElement): Box | null => {
+  const rootMatrix = root.getScreenCTM()
+  const elementMatrix = element.getScreenCTM()
+  if (!rootMatrix || !elementMatrix) return null
+
+  const box = element.getBBox({ stroke: true, markers: true })
+  if (!box.width && !box.height) return null
+
+  const toRoot = rootMatrix.inverse().multiply(elementMatrix)
+  const corners = [
+    new DOMPoint(box.x, box.y),
+    new DOMPoint(box.x + box.width, box.y),
+    new DOMPoint(box.x, box.y + box.height),
+    new DOMPoint(box.x + box.width, box.y + box.height),
+  ].map((point) => point.matrixTransform(toRoot))
+
+  const xs = corners.map((point) => point.x)
+  const ys = corners.map((point) => point.y)
+  const x = Math.min(...xs)
+  const y = Math.min(...ys)
+
+  return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y }
+}
+
+const measure = (svg: SVGSVGElement): Box => {
+  const boxes = Array.from(svg.querySelectorAll<SVGGraphicsElement>(SHAPES))
+    .filter(paints)
+    .map((element) => boxInRootSpace(element, svg))
+    .filter((box): box is Box => box !== null)
+
+  if (!boxes.length) return svg.getBBox()
+
+  const minX = Math.min(...boxes.map((box) => box.x))
+  const minY = Math.min(...boxes.map((box) => box.y))
+  const maxX = Math.max(...boxes.map((box) => box.x + box.width))
+  const maxY = Math.max(...boxes.map((box) => box.y + box.height))
+
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+}
 
 export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
   const container = document.createElement('div')
   container.setAttribute('aria-hidden', 'true')
-  container.style.cssText =
-    'position:fixed;top:0;left:0;width:0;height:0;overflow:hidden;visibility:hidden;pointer-events:none'
+  // Off-screen but fully rendered: `visibility:hidden` inherits and would make
+  // every element look unpainted to getComputedStyle.
+  container.style.cssText = 'position:fixed;top:0;left:-99999px;opacity:0;pointer-events:none'
   container.innerHTML = svgCode
 
   const svg = container.querySelector('svg')
