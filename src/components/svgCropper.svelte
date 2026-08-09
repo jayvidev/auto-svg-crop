@@ -6,9 +6,7 @@
   import SparklesIcon from '@lucide/svelte/icons/sparkles'
   import UploadIcon from '@lucide/svelte/icons/upload'
   import type { Snippet } from 'svelte'
-  import { cubicOut } from 'svelte/easing'
   import { toast } from 'svelte-sonner'
-  import { fade, fly } from 'svelte/transition'
 
   import CodeBlock from '@/components/codeBlock.svelte'
   import Dropzone from '@/components/dropzone.svelte'
@@ -16,7 +14,7 @@
   import { Button } from '@/components/ui/button'
   import { Separator } from '@/components/ui/separator'
   import { Switch } from '@/components/ui/switch'
-  import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
   import { exampleSvg } from '@/data/example'
   import { settings } from '@/stores/settings.store'
   import { clipboard } from '@/utils/clipboard'
@@ -234,11 +232,7 @@
 {/snippet}
 
 {#if !result}
-  <div
-    in:fly={{ y: 12, duration: 250, easing: cubicOut }}
-    out:fade={{ duration: 150 }}
-    class="flex min-h-[calc(100svh-8rem)] flex-col justify-center pb-10"
-  >
+  <div class="flex min-h-[calc(100svh-8rem)] flex-col justify-center pb-10">
     <section class="space-y-2 pb-8 text-center">
       <h1 class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
         Trim the empty space around your SVGs
@@ -260,11 +254,7 @@
     </div>
   </div>
 {:else}
-  <div
-    in:fly={{ y: 14, duration: 300, easing: cubicOut }}
-    out:fade={{ duration: 150 }}
-    class="space-y-5 pt-6"
-  >
+  <div class="space-y-5 pt-6">
     <!-- Toolbar -->
     <div
       class="sticky top-16 z-40 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white/90 p-3 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:bg-neutral-900/90"
@@ -305,7 +295,6 @@
         </TabsList>
         {#if activeTab === 'compare'}
           <label
-            in:fade={{ duration: 150 }}
             class="flex items-center gap-2.5 text-sm"
             title="Outline the bounding box and dim the empty space being removed"
           >
@@ -315,39 +304,35 @@
         {/if}
       </div>
 
-      {#key activeTab}
-        <div in:fly={{ y: 8, duration: 220, easing: cubicOut }} out:fade={{ duration: 120 }}>
-          {#if activeTab === 'compare'}
-            <div class="space-y-5">
-              <div class="grid gap-5 lg:grid-cols-2">
-                {@render card(
-                  'Before',
-                  `${result.frame.width} × ${result.frame.height} · ${Math.round(result.trimmed * 100)}% empty`,
-                  before
-                )}
-                {@render card('After', `${result.width} × ${result.height}`, after)}
-              </div>
-
-              <!-- Stats -->
-              <div
-                class="grid gap-px overflow-hidden rounded-xl border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-neutral-800 dark:bg-neutral-800"
-              >
-                {@render stat('Original viewBox', result.originalViewBox ?? 'not defined')}
-                {@render stat('Cropped viewBox', result.croppedViewBox)}
-                {@render stat('Empty space', `${Math.round(result.trimmed * 100)}% removed`)}
-                {@render stat(
-                  'Weight',
-                  stats
-                    ? `${formatBytes(stats.before)} → ${formatBytes(stats.after)} (-${Math.round(stats.saved * 100)}%)`
-                    : '-'
-                )}
-              </div>
-            </div>
-          {:else if activeTab === 'code'}
-            {@render card('Result', filename, code)}
-          {/if}
+      <TabsContent value="compare" class="space-y-5">
+        <div class="grid gap-5 lg:grid-cols-2">
+          {@render card(
+            'Before',
+            `${result.frame.width} × ${result.frame.height} · ${Math.round(result.trimmed * 100)}% empty`,
+            before
+          )}
+          {@render card('After', `${result.width} × ${result.height}`, after)}
         </div>
-      {/key}
+
+        <!-- Stats -->
+        <div
+          class="grid gap-px overflow-hidden rounded-xl border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-neutral-800 dark:bg-neutral-800"
+        >
+          {@render stat('Original viewBox', result.originalViewBox ?? 'not defined')}
+          {@render stat('Cropped viewBox', result.croppedViewBox)}
+          {@render stat('Empty space', `${Math.round(result.trimmed * 100)}% removed`)}
+          {@render stat(
+            'Weight',
+            stats
+              ? `${formatBytes(stats.before)} → ${formatBytes(stats.after)} (-${Math.round(stats.saved * 100)}%)`
+              : '-'
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="code">
+        {@render card('Result', filename, code)}
+      </TabsContent>
     </Tabs>
   </div>
 {/if}

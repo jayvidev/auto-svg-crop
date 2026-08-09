@@ -13,6 +13,9 @@
 <TabsPrimitive.Content
   bind:ref
   data-slot="tabs-content"
-  class={cn('flex-1 outline-none', className)}
+  class={cn(
+    'flex-1 outline-none data-[state=active]:animate-in data-[state=active]:fade-in-0 data-[state=active]:zoom-in-98 duration-150 ease-out',
+    className
+  )}
   {...restProps}
 />

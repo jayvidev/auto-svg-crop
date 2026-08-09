@@ -32,31 +32,6 @@
     'Courier New', monospace, 'Apple Color Emoji';
 }
 
-/* Sleek structural grid with soft spotlight */
-.bg-grid {
-  background-image: linear-gradient(to right, currentColor 1px, transparent 1px),
-    linear-gradient(to bottom, currentColor 1px, transparent 1px);
-  background-size: 36px 36px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 0%, #000 35%, transparent 100%);
-  mask-image: radial-gradient(ellipse 70% 65% at 50% 0%, #000 35%, transparent 100%);
-}
-
-.ambient-spotlight {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -10%,
-    rgba(120, 119, 198, 0.08) 0%,
-    rgba(255, 255, 255, 0) 80%
-  );
-}
-
-:where(.dark) .ambient-spotlight {
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -10%,
-    rgba(255, 255, 255, 0.05) 0%,
-    rgba(0, 0, 0, 0) 80%
-  );
-}
-
 /* Shiki (light + dark themes in one output) */
 .shiki-block .shiki,
 .shiki-block .shiki span {
