@@ -28,11 +28,7 @@
     dragging && 'border-neutral-900 bg-white dark:border-neutral-100 dark:bg-neutral-900'
   )}
 >
-  <div
-    class="rounded-full border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900"
-  >
-    <FileUpIcon size={28} strokeWidth={1.5} />
-  </div>
+  <FileUpIcon size={32} strokeWidth={1.5} class="text-neutral-500 dark:text-neutral-400" />
   <div class="space-y-1.5">
     <p class="text-lg font-medium">Drop, paste or pick your SVG</p>
     <p class="text-sm text-neutral-500 dark:text-neutral-400">
