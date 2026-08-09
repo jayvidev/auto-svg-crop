@@ -6,7 +6,7 @@
 
 <footer class="w-full py-8">
   <div
-    class="mx-auto flex w-full max-w-6xl items-center justify-center gap-1.5 px-4 text-sm text-neutral-500 dark:text-neutral-400"
+    class="mx-auto flex w-full max-w-6xl items-center justify-center gap-1.5 px-4 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400"
   >
     <span>Built with</span>
     <HeartIcon size={14} strokeWidth={1.5} class="text-red-500" fill="currentColor" />

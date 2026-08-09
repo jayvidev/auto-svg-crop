@@ -32,7 +32,19 @@
     'Courier New', monospace, 'Apple Color Emoji';
 }
 
-/* Shiki (light + dark themes in one output) */
+.hero-glow {
+  background-image: radial-gradient(
+    ellipse 50% 45% at 50% 40%,
+    var(--glow-color) 0%,
+    transparent 70%
+  );
+  --glow-color: rgb(255 255 255 / 0.9);
+}
+
+:where(html.dark) .hero-glow {
+  --glow-color: rgb(64 64 64 / 0.35);
+}
+
 .shiki-block .shiki,
 .shiki-block .shiki span {
   background-color: transparent !important;
@@ -49,22 +61,6 @@ html.dark .shiki span {
   background-color: transparent !important;
 }
 
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  border-radius: 5px;
-  @apply bg-neutral-300 dark:bg-neutral-700;
-}
-
-/* Checkerboard background for svg previews */
 .checkerboard {
   background-image:
     linear-gradient(45deg, var(--checker) 25%, transparent 25%),

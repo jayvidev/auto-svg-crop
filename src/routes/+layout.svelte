@@ -16,8 +16,10 @@
 
 <ModeWatcher />
 <Sonner />
-<Header />
-<main class="mx-auto w-full max-w-6xl px-4">
-  {@render children?.()}
-</main>
-<Footer />
+<div class="flex min-h-svh flex-col">
+  <Header />
+  <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4">
+    {@render children?.()}
+  </main>
+  <Footer />
+</div>

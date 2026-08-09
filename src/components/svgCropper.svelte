@@ -18,6 +18,7 @@
   import { exampleSvg } from '@/data/example'
   import { settings } from '@/stores/settings.store'
   import { clipboard } from '@/utils/clipboard'
+  import { cn } from '@/utils/cn'
   import { cropSvg, type CropSvgResult } from '@/utils/cropSvg'
   import { download } from '@/utils/download'
   import { optimizeSvg } from '@/utils/optimizeSvg'
@@ -143,6 +144,12 @@
     download({ content: output, filename, mimeType: 'image/svg+xml' })
   }
 
+  /**
+   * Staggered entrance. CSS animations instead of Svelte transitions: `in:`
+   * does not run on hydration, so a reload would show no animation at all.
+   */
+  const enter = 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
+
   const reset = () => {
     source = ''
     result = null
@@ -232,21 +239,31 @@
 {/snippet}
 
 {#if !result}
-  <div class="flex min-h-[calc(100svh-8rem)] flex-col justify-center pb-10">
+  <div class="relative flex flex-1 flex-col justify-center py-10">
+    <div class="pointer-events-none absolute inset-0 -z-10 hero-glow" aria-hidden="true"></div>
+
     <section class="space-y-2 pb-8 text-center">
-      <h1 class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+      <h1 class={cn('text-2xl font-semibold tracking-tight text-balance sm:text-4xl', enter)}>
         Trim the empty space around your SVGs
       </h1>
-      <p class="text-neutral-500 text-pretty dark:text-neutral-400">
+      <p
+        class={cn(
+          'text-sm text-neutral-500 text-pretty sm:text-base dark:text-neutral-400',
+          enter,
+          'delay-100'
+        )}
+      >
         Measures the real bounding box with
         <code class="font-mono">getBBox()</code> and rewrites the
         <code class="font-mono">viewBox</code> to fit the visible content.
       </p>
     </section>
 
-    <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
+    <div class={cn(enter, 'delay-200')}>
+      <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
+    </div>
 
-    <div class="mt-4 flex justify-center">
+    <div class={cn('mt-4 flex justify-center', enter, 'delay-300')}>
       <Button variant="ghost" size="sm" onclick={() => process(exampleSvg, 'example.svg')}>
         <SparklesIcon size={14} strokeWidth={1.5} />
         <span>Try it with an example</span>
@@ -254,7 +271,7 @@
     </div>
   </div>
 {:else}
-  <div class="space-y-5 pt-6">
+  <div class={cn('space-y-5 pt-6', enter)}>
     <!-- Toolbar -->
     <div
       class="sticky top-16 z-40 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white/90 p-3 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:bg-neutral-900/90"
@@ -304,7 +321,7 @@
         {/if}
       </div>
 
-      <TabsContent value="compare" class="space-y-5">
+      <TabsContent value="compare" class="animate-in fade-in-0 space-y-5 duration-300">
         <div class="grid gap-5 lg:grid-cols-2">
           {@render card(
             'Before',
@@ -330,7 +347,7 @@
         </div>
       </TabsContent>
 
-      <TabsContent value="code">
+      <TabsContent value="code" class="animate-in fade-in-0 duration-300">
         {@render card('Result', filename, code)}
       </TabsContent>
     </Tabs>
