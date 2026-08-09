@@ -32,6 +32,14 @@
     'Courier New', monospace, 'Apple Color Emoji';
 }
 
+/* Dotted backdrop, faded towards the edges */
+.dot-grid {
+  background-image: radial-gradient(currentColor 1px, transparent 1px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000 30%, transparent 100%);
+}
+
 /* Shiki (light + dark themes in one output) */
 .shiki-block .shiki,
 .shiki-block .shiki span {

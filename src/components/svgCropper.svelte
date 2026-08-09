@@ -231,24 +231,31 @@
 {/snippet}
 
 {#if !result}
-  <section class="space-y-2 py-10 text-center sm:py-14">
-    <h1 class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
-      Trim the empty space around your SVGs
-    </h1>
-    <p class="text-neutral-500 text-pretty dark:text-neutral-400">
-      Measures the real bounding box with
-      <code class="font-mono">getBBox()</code> and rewrites the
-      <code class="font-mono">viewBox</code> to fit the visible content.
-    </p>
-  </section>
+  <div class="relative flex min-h-[calc(100svh-8rem)] flex-col justify-center pb-10">
+    <div
+      class="pointer-events-none absolute inset-0 -z-10 text-neutral-300 dot-grid dark:text-neutral-800"
+      aria-hidden="true"
+    ></div>
 
-  <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
+    <section class="space-y-2 pb-8 text-center">
+      <h1 class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+        Trim the empty space around your SVGs
+      </h1>
+      <p class="text-neutral-500 text-pretty dark:text-neutral-400">
+        Measures the real bounding box with
+        <code class="font-mono">getBBox()</code> and rewrites the
+        <code class="font-mono">viewBox</code> to fit the visible content.
+      </p>
+    </section>
 
-  <div class="mt-4 flex justify-center">
-    <Button variant="ghost" size="sm" onclick={() => process(exampleSvg, 'example.svg')}>
-      <SparklesIcon size={14} strokeWidth={1.5} />
-      <span>Try it with an example</span>
-    </Button>
+    <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
+
+    <div class="mt-4 flex justify-center">
+      <Button variant="ghost" size="sm" onclick={() => process(exampleSvg, 'example.svg')}>
+        <SparklesIcon size={14} strokeWidth={1.5} />
+        <span>Try it with an example</span>
+      </Button>
+    </div>
   </div>
 {:else}
   <div class="space-y-5 pt-6">
