@@ -7,43 +7,41 @@
 
 <div align="center">
 
-![Svelte](https://img.shields.io/badge/SvelteKit-FF3E00?style=flat&logo=svelte&logoColor=white)
+# auto-svg-crop.jayvi.dev
+
+![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=flat&logo=svelte&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-06B6D4?logo=tailwindcss&logoColor=white&style=flat)
-![shadcn-svelte](https://img.shields.io/badge/shadcn--svelte-000000?style=flat&logo=shadcnui&logoColor=white)
+![SVGO](https://img.shields.io/badge/SVGO-3E7FC1?style=flat&logo=svg&logoColor=white)
 
 </div>
 
-## Auto SVG Crop
+A client-side tool that trims the empty space around an SVG: it measures the real bounding box with `getBBox()` and rewrites the `viewBox` to fit the visible content. Nothing is uploaded — every step runs in the browser.
 
-Trims the empty space around an SVG: it measures the real bounding box with
-`getBBox()` and rewrites the `viewBox`. Everything runs in the browser, nothing
-is uploaded.
+## Tech Stack & Features
 
-- Drop a `.svg` anywhere on the page.
-- Paste the code or the file with `⌘/Ctrl + V` anywhere.
-- Or click the dropzone to browse for the file.
-- Optional optimization with [SVGO](https://svgo.dev) (remembered in `localStorage`).
-- Copy, download and before / after preview, with light and dark mode.
+- **SvelteKit 2 + Svelte 5** (runes), Vite 8, TypeScript strict, Vercel adapter, Tailwind v4 (via `@tailwindcss/vite`), Geist font.
+- **Drop it anywhere**: drag a `.svg` onto any part of the page, paste code or a file with `⌘/Ctrl + V` from anywhere, or click the dropzone to browse.
+- **Cropping engine** in [`src/utils/cropSvg.ts`](./src/utils/cropSvg.ts): renders the SVG off-screen, reads `getBBox()`, rewrites the `viewBox`, drops `width`/`height` and reports the trimmed area.
+- **Before / after comparison** — both previews share one box, and the original is drawn with its bounding box outlined and the removed space dimmed.
+- Optional **SVGO** optimization, remembered in `localStorage`, plus copy, download and syntax-highlighted output (Shiki, dual light/dark themes).
+- **shadcn-svelte** components (bits-ui + tailwind-variants) with light and dark mode via `mode-watcher`.
 
-## Development
+## Quickstart
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev                     # site → http://localhost:5173
 ```
 
-| Command        | Description                    |
-| -------------- | ------------------------------ |
-| `pnpm dev`     | Development server (Vite).     |
-| `pnpm build`   | Production build.              |
-| `pnpm preview` | Preview the production build.  |
-| `pnpm check`   | Type-check with `svelte-check`.|
-| `pnpm lint`    | ESLint over `./src`.           |
-| `pnpm format`  | Prettier over `./src`.         |
+## Scripts
 
-## Stack
+| Script | What |
+|--------|------|
+| `pnpm dev` / `build` / `preview` | SvelteKit app |
+| `pnpm check` / `check:watch` | Type-check with `svelte-check` |
+| `pnpm lint` / `lint:fix` / `format` | ESLint + Prettier |
 
-SvelteKit 2 + Svelte 5, Tailwind CSS 4, [shadcn-svelte](https://shadcn-svelte.com)
-components (bits-ui + tailwind-variants), `mode-watcher`, `svelte-sonner` and
-`svgo`. Prettier, ESLint, Tailwind and the component library are aligned with
-[svgl](https://github.com/pheralb/svgl).
+## License
+
+MIT
