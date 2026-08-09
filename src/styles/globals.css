@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+
+/* Plugins */
+@import 'tw-animate-css';
+
+/* Dark Mode */
+@custom-variant dark (&:is(.dark *));
+
+/* Fonts */
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'GeistMono';
+  src: url('/fonts/GeistMono.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: normal;
+}
+
+@theme {
+  --font-sans:
+    'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono:
+    'GeistMono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace, 'Apple Color Emoji';
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  @apply bg-neutral-300 dark:bg-neutral-700;
+}
+
+/* Checkerboard background for svg previews */
+.checkerboard {
+  background-image:
+    linear-gradient(45deg, var(--checker) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--checker) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--checker) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--checker) 75%);
+  background-size: 16px 16px;
+  background-position:
+    0 0,
+    0 8px,
+    8px -8px,
+    -8px 0px;
+  --checker: var(--color-neutral-200);
+}
+
+:where(.dark) .checkerboard {
+  --checker: var(--color-neutral-800);
+}

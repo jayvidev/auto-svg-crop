@@ -1,27 +1,25 @@
 {
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
   "editor.formatOnSave": true,
 
-  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.validate": ["javascript", "typescript", "svelte"],
+  "tailwindCSS.experimental.classRegex": [["[\"'`]([^\"'`]*).*?[\"'`]"]],
 
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.insertSpaces": true,
     "editor.tabSize": 2
   },
-  "[javascriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.insertSpaces": true,
-    "editor.tabSize": 2
-  },
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.insertSpaces": true,
-    "editor.tabSize": 2
-  },
-  "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.insertSpaces": true,
     "editor.tabSize": 2
@@ -37,15 +35,15 @@
     "editor.tabSize": 2
   },
   "files.exclude": {
+    "**/.svelte-kit": true,
+    "**/build": true,
     "**/dist": true,
-    "**/.next": true,
-    "**/out": true,
     "**/node_modules": true
   },
   "search.exclude": {
+    "**/.svelte-kit": true,
+    "**/build": true,
     "**/dist": true,
-    "**/.next": true,
-    "**/out": true,
     "**/node_modules": true
   }
 }

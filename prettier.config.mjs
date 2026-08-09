@@ -1,4 +1,4 @@
-/** @type {import("prettier").Config} */
+/** @type {import("prettier").Config & import("prettier-plugin-tailwindcss").PluginOptions} */
 export default {
   printWidth: 100,
   tabWidth: 2,
@@ -9,11 +9,17 @@ export default {
   bracketSpacing: true,
   arrowParens: 'always',
   endOfLine: 'lf',
-  plugins: [],
+  plugins: ['prettier-plugin-svelte', 'prettier-plugin-tailwindcss'],
+  tailwindStylesheet: './src/styles/globals.css',
   overrides: [
     {
-      files: ['*.tsx', '*.ts', '*.jsx', '*.js'],
-      options: { parser: 'babel-ts' },
+      files: ['*.ts', '*.js'],
+      options: { parser: 'typescript' },
+    },
+    {
+      // Markup attributes stay double-quoted; only the script blocks follow singleQuote.
+      files: '*.svelte',
+      options: { parser: 'svelte' },
     },
   ],
 }

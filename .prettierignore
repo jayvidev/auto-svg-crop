@@ -1,11 +1,15 @@
 node_modules/
 pnpm-lock.yaml
 
-dist/
+.svelte-kit/
 build/
-.next/
+dist/
+.vercel/
+static/
 
 README.md
 LICENSE
+
+*.md
 
 /coverage
