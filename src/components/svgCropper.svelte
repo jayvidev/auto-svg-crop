@@ -3,16 +3,20 @@
   import DownloadIcon from '@lucide/svelte/icons/download'
   import FileUpIcon from '@lucide/svelte/icons/file-up'
   import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw'
+  import SparklesIcon from '@lucide/svelte/icons/sparkles'
   import UploadIcon from '@lucide/svelte/icons/upload'
+  import type { Snippet } from 'svelte'
   import { toast } from 'svelte-sonner'
 
   import Dropzone from '@/components/dropzone.svelte'
+  import SvgPreview from '@/components/svgPreview.svelte'
   import { Button } from '@/components/ui/button'
   import { Separator } from '@/components/ui/separator'
   import { Switch } from '@/components/ui/switch'
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+  import { exampleSvg } from '@/data/example'
   import { settings } from '@/stores/settings.store'
   import { clipboard } from '@/utils/clipboard'
-  import { cn } from '@/utils/cn'
   import { cropSvg, type CropSvgResult } from '@/utils/cropSvg'
   import { download } from '@/utils/download'
   import { optimizeSvg } from '@/utils/optimizeSvg'
@@ -25,6 +29,7 @@
   let source = $state('')
   let filename = $state('cropped.svg')
   let result = $state<CropSvgResult | null>(null)
+  let sameScale = $state(true)
 
   const output = $derived(
     result ? ($settings.optimizeSvgs ? optimizeSvg({ svgCode: result.svg }) : result.svg) : ''
@@ -54,7 +59,7 @@
       result = cropped
       if (name) filename = name.replace(/\.svg$/i, '') + '-crop.svg'
       toast.success('SVG cropped', {
-        description: `viewBox: ${cropped.croppedViewBox}`,
+        description: `${Math.round(cropped.trimmed * 100)}% of the canvas was empty space`,
       })
     } catch (error) {
       result = null
@@ -172,13 +177,89 @@
   </div>
 {/if}
 
+{#snippet before()}
+  <SvgPreview
+    code={source}
+    viewBox={result?.frame}
+    overlay={result?.crop}
+    class="checkerboard h-72"
+  />
+{/snippet}
+
+{#snippet after()}
+  <SvgPreview
+    code={output}
+    viewBox={sameScale ? result?.frame : null}
+    overlay={sameScale ? result?.crop : null}
+    class="checkerboard h-72"
+  />
+{/snippet}
+
+{#snippet stat(label: string, value: string)}
+  <div class="bg-white p-4 dark:bg-neutral-900">
+    <p class="text-xs text-neutral-500 dark:text-neutral-400">{label}</p>
+    <p class="mt-1 truncate font-mono text-sm" title={value}>{value}</p>
+  </div>
+{/snippet}
+
+{#snippet code()}
+  <div>
+    <div
+      class="flex items-center justify-end gap-2 border-b border-neutral-200 px-3 py-1.5 dark:border-neutral-800"
+    >
+      <span class="font-mono text-xs text-neutral-500 dark:text-neutral-400">
+        {formatBytes(byteSize(output))}
+      </span>
+      <Separator orientation="vertical" class="h-5" />
+      <Button variant="ghost" size="sm" onclick={copy}>
+        <CopyIcon size={14} strokeWidth={1.5} />
+        <span>Copy</span>
+      </Button>
+    </div>
+    <pre
+      class="max-h-96 overflow-auto p-4 font-mono text-xs whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">{output}</pre>
+  </div>
+{/snippet}
+
+{#snippet card(title: string, subtitle: string, body: Snippet)}
+  <div
+    class="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
+  >
+    <div
+      class="flex items-baseline justify-between gap-3 border-b border-neutral-200 px-4 py-2.5 dark:border-neutral-800"
+    >
+      <span class="text-sm font-medium">{title}</span>
+      <span class="font-mono text-xs text-neutral-500 dark:text-neutral-400">{subtitle}</span>
+    </div>
+    {@render body()}
+  </div>
+{/snippet}
+
 {#if !result}
+  <section class="space-y-2 py-10 text-center sm:py-14">
+    <h1 class="text-3xl font-medium tracking-tight text-balance sm:text-4xl">
+      Trim the empty space around your SVGs
+    </h1>
+    <p class="text-neutral-500 text-pretty dark:text-neutral-400">
+      Measures the real bounding box with
+      <code class="font-mono">getBBox()</code> and rewrites the
+      <code class="font-mono">viewBox</code> to fit the visible content.
+    </p>
+  </section>
+
   <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
+
+  <div class="mt-4 flex justify-center">
+    <Button variant="ghost" size="sm" onclick={() => process(exampleSvg, 'example.svg')}>
+      <SparklesIcon size={14} strokeWidth={1.5} />
+      <span>Try it with an example</span>
+    </Button>
+  </div>
 {:else}
-  <div class="space-y-6">
+  <div class="space-y-5 pt-6">
     <!-- Toolbar -->
     <div
-      class="flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:bg-neutral-900"
+      class="sticky top-16 z-40 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white/90 p-3 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:bg-neutral-900/90"
     >
       <div class="flex flex-wrap items-center gap-2">
         <Button onclick={copy}>
@@ -204,75 +285,46 @@
       </label>
     </div>
 
-    <!-- Stats -->
-    <div
-      class="grid gap-px overflow-hidden rounded-xl border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-neutral-800 dark:bg-neutral-800"
-    >
-      {#snippet stat(label: string, value: string)}
-        <div class="bg-white p-4 dark:bg-neutral-900">
-          <p class="text-xs text-neutral-500 dark:text-neutral-400">{label}</p>
-          <p class="mt-1 truncate font-mono text-sm" title={value}>{value}</p>
-        </div>
-      {/snippet}
-      {@render stat('Original viewBox', result.originalViewBox ?? 'not defined')}
-      {@render stat('Cropped viewBox', result.croppedViewBox)}
-      {@render stat('Size', `${result.width} × ${result.height}`)}
-      {@render stat(
-        'Weight',
-        stats
-          ? `${formatBytes(stats.before)} → ${formatBytes(stats.after)} (-${Math.round(stats.saved * 100)}%)`
-          : '-'
-      )}
-    </div>
-
-    <!-- Previews -->
-    <div class="grid gap-6 lg:grid-cols-2">
-      {#snippet preview(title: string, code: string, highlight: boolean)}
-        <div
-          class={cn(
-            'overflow-hidden rounded-xl border bg-white dark:bg-neutral-900',
-            highlight
-              ? 'border-neutral-400 dark:border-neutral-600'
-              : 'border-neutral-200 dark:border-neutral-800'
-          )}
+    <Tabs value="compare" class="gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <TabsList>
+          <TabsTrigger value="compare">Compare</TabsTrigger>
+          <TabsTrigger value="code">Code</TabsTrigger>
+        </TabsList>
+        <label
+          class="flex items-center gap-2.5 text-sm"
+          title="Render both previews in the original coordinate system"
         >
-          <div
-            class="flex items-center justify-between border-b border-neutral-200 px-4 py-2.5 text-sm font-medium dark:border-neutral-800"
-          >
-            <span>{title}</span>
-          </div>
-          <div
-            class="checkerboard flex h-64 items-center justify-center p-6 [&>svg]:max-h-full [&>svg]:max-w-full"
-          >
-            {@html code}
-          </div>
-        </div>
-      {/snippet}
-      {@render preview('Original', source, false)}
-      {@render preview('Cropped', output, true)}
-    </div>
-
-    <!-- Code -->
-    <div
-      class="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
-    >
-      <div
-        class="flex items-center justify-between border-b border-neutral-200 px-4 py-2 dark:border-neutral-800"
-      >
-        <span class="text-sm font-medium">Result</span>
-        <div class="flex h-5 items-center gap-2">
-          <span class="font-mono text-xs text-neutral-500 dark:text-neutral-400"
-            >{formatBytes(byteSize(output))}</span
-          >
-          <Separator orientation="vertical" />
-          <Button variant="ghost" size="sm" onclick={copy}>
-            <CopyIcon size={14} strokeWidth={1.5} />
-            <span>Copy</span>
-          </Button>
-        </div>
+          <Switch bind:checked={sameScale} />
+          <span>Same scale</span>
+        </label>
       </div>
-      <pre
-        class="max-h-72 overflow-auto p-4 font-mono text-xs whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">{output}</pre>
-    </div>
+
+      <TabsContent value="compare" class="space-y-5">
+        <div class="grid gap-5 lg:grid-cols-2">
+          {@render card('Before', `${result.frame.width} × ${result.frame.height}`, before)}
+          {@render card('After', `${result.width} × ${result.height}`, after)}
+        </div>
+
+        <!-- Stats -->
+        <div
+          class="grid gap-px overflow-hidden rounded-xl border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-neutral-800 dark:bg-neutral-800"
+        >
+          {@render stat('Original viewBox', result.originalViewBox ?? 'not defined')}
+          {@render stat('Cropped viewBox', result.croppedViewBox)}
+          {@render stat('Empty space', `${Math.round(result.trimmed * 100)}% removed`)}
+          {@render stat(
+            'Weight',
+            stats
+              ? `${formatBytes(stats.before)} → ${formatBytes(stats.after)} (-${Math.round(stats.saved * 100)}%)`
+              : '-'
+          )}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="code">
+        {@render card('Result', filename, code)}
+      </TabsContent>
+    </Tabs>
   </div>
 {/if}
