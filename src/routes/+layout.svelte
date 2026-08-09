@@ -15,7 +15,11 @@
 </script>
 
 <div
-  class="pointer-events-none fixed inset-0 -z-10 text-neutral-300 dot-grid dark:text-neutral-800"
+  class="pointer-events-none fixed inset-0 -z-10 ambient-spotlight"
+  aria-hidden="true"
+></div>
+<div
+  class="pointer-events-none fixed inset-0 -z-10 bg-grid text-neutral-200 dark:text-neutral-800/60"
   aria-hidden="true"
 ></div>
 
