@@ -159,6 +159,25 @@
       : `1:${round(box.height / box.width)}`
   })
 
+  const scale = $derived.by(() => {
+    if (!result || !box || !box.width || !box.height) return '-'
+
+    const factor = Math.min(result.frame.width / box.width, result.frame.height / box.height)
+    return `${round(factor)}× bigger`
+  })
+
+  const suggestedSize = $derived(
+    box ? `width="${Math.round(box.width)}" height="${Math.round(box.height)}"` : '-'
+  )
+
+  const appliedPadding = $derived.by(() => {
+    if (!result) return '-'
+    if (!padding) return 'none'
+
+    const amount = round((Math.max(result.crop.width, result.crop.height) * padding) / 100)
+    return `${padding}% · ${amount} units`
+  })
+
   const copyValue = (value: string) => {
     clipboard(value)
     toast.success('Copied to clipboard', { description: value })
@@ -396,6 +415,9 @@
       {colors.length}
       {colors.length === 1 ? 'color' : 'colors'}
     </p>
+    {#if !colors.length}
+      <p class="mt-1 truncate font-mono text-sm">gradients only</p>
+    {/if}
     <div class="mt-1.5 flex flex-wrap gap-1.5">
       {#each colors.slice(0, 10) as color (color)}
         <button
@@ -621,9 +643,7 @@
               'Complexity',
               `${result.elements} ${result.elements === 1 ? 'element' : 'elements'} · ${result.pathNodes} nodes`
             )}
-            {#if result.colors.length}
-              {@render colorStat(result.colors)}
-            {/if}
+            {@render colorStat(result.colors)}
             {@render stat(
               'Weight',
               stats
@@ -634,6 +654,9 @@
               'Saved by',
               stats ? `crop ${formatBytes(stats.byCrop)} · SVGO ${formatBytes(stats.bySvgo)}` : '-'
             )}
+            {@render stat('Renders', scale)}
+            {@render stat('Suggested size', suggestedSize, true)}
+            {@render stat('Padding', appliedPadding)}
           </div>
         </div>
 
