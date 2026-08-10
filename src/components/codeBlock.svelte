@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ScrollArea } from '@/components/ui/scroll-area'
   import { cn } from '@/utils/cn'
   import { highlightSvg } from '@/utils/shiki'
 
@@ -29,10 +30,13 @@
   })
 </script>
 
-<div class={cn('shiki-block overflow-auto p-4 font-mono text-xs', className)}>
+<ScrollArea
+  class="shiki-block overflow-hidden"
+  viewportClassName={cn('p-4 font-mono text-xs', className)}
+>
   {#if highlighted}
     {@html highlighted}
   {:else}
     <pre class="whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">{code}</pre>
   {/if}
-</div>
+</ScrollArea>
