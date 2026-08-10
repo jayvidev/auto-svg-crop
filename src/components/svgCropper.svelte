@@ -91,6 +91,8 @@
     { value: 'dark', label: 'Black background', icon: MoonIcon },
   ] as const
 
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' })
+
   const onKeydown = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null
     if (target?.closest("input, textarea, [contenteditable='true']")) return
@@ -151,6 +153,7 @@
         height: cropped.height,
       })
       pushState('', { view: 'result' })
+      scrollToTop()
       toast.success('SVG cropped', {
         description: `${Math.round(cropped.trimmed * 100)}% of the canvas was empty space`,
       })
@@ -259,6 +262,7 @@
       source = entry.code
       filename = entry.name
       pushState('', { view: 'result' })
+      scrollToTop()
     } catch (error) {
       toast.error('Could not reopen', { description: (error as Error).message })
     }
@@ -269,6 +273,7 @@
     result = null
     filename = 'cropped.svg'
     replaceState('', {})
+    scrollToTop()
   }
 
   const showResult = $derived(Boolean(result) && page.state.view === 'result')
@@ -445,7 +450,7 @@
           <DownloadIcon size={15} strokeWidth={1.5} />
           <span>Download</span>
         </Button>
-        <Button variant="ghost" onclick={() => fileInput?.click()}>
+        <Button variant="outline" onclick={() => fileInput?.click()}>
           <UploadIcon size={15} strokeWidth={1.5} />
           <span>New SVG</span>
         </Button>
