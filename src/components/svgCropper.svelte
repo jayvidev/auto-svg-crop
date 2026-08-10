@@ -457,7 +457,7 @@
         </label>
         <Separator orientation="vertical" class="h-5" />
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onclick={reset}
           title="Back to start — this crop stays in Recent"
