@@ -9,6 +9,7 @@
     value?: string
     class?: string
     disabled?: boolean
+    onValueChange?: (value: string) => void
     'aria-label'?: string
     children?: Snippet
   }

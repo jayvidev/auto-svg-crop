@@ -38,8 +38,8 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
   import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
   import { exampleSvg } from '@/data/example'
-  import { addToHistory, type HistoryEntry } from '@/stores/history.store'
-  import { settings } from '@/stores/settings.store'
+  import { addToHistory, history, type HistoryEntry } from '@/stores/history.store'
+  import { type PreviewBackground, type ResultTab, settings } from '@/stores/settings.store'
   import { clipboard } from '@/utils/clipboard'
   import { cn } from '@/utils/cn'
   import { type Box, cropSvg, type CropSvgResult, expandBox, withViewBox } from '@/utils/cropSvg'
@@ -55,22 +55,17 @@
   let source = $state('')
   let filename = $state('cropped.svg')
   let result = $state<CropSvgResult | null>(null)
-  let showCropArea = $state(true)
-  let activeTab = $state<'compare' | 'code'>('compare')
-  let padding = $state(0)
-  let previewBackground = $state<PreviewBackground>('checker')
-
-  type PreviewBackground = 'checker' | 'light' | 'dark'
-
   const backgrounds = {
     checker: 'checkerboard text-neutral-900 dark:text-neutral-100',
     light: 'bg-white text-neutral-900',
     dark: 'bg-neutral-950 text-neutral-100',
   } as const
 
-  const previewClass = $derived(cn(backgrounds[previewBackground] ?? backgrounds.checker, 'h-72'))
+  const previewClass = $derived(
+    cn(backgrounds[$settings.previewBackground] ?? backgrounds.checker, 'h-72')
+  )
 
-  const box = $derived<Box | null>(result ? expandBox(result.crop, padding) : null)
+  const box = $derived<Box | null>(result ? expandBox(result.crop, $settings.padding) : null)
 
   const cropped = $derived(result && box ? withViewBox(result.svg, box) : '')
 
@@ -172,10 +167,12 @@
 
   const appliedPadding = $derived.by(() => {
     if (!result) return '-'
-    if (!padding) return 'none'
+    if (!$settings.padding) return 'none'
 
-    const amount = round((Math.max(result.crop.width, result.crop.height) * padding) / 100)
-    return `${padding}% · ${amount} units`
+    const amount = round(
+      (Math.max(result.crop.width, result.crop.height) * $settings.padding) / 100
+    )
+    return `${$settings.padding}% · ${amount} units`
   })
 
   const copyValue = (value: string) => {
@@ -196,13 +193,14 @@
       source = code
       result = cropped
       if (name) filename = name.replace(/\.svg$/i, '') + '-crop.svg'
-      addToHistory({
+      const entry = addToHistory({
         name: filename,
         code,
         crop: cropped.crop,
         width: cropped.width,
         height: cropped.height,
       })
+      $settings.lastEntryId = entry?.id ?? null
       pushState('', { view: 'result' })
       scrollToTop()
       toast.success('SVG cropped', {
@@ -293,6 +291,7 @@
 
   onMount(() => {
     hydrated = true
+    resumeLastEntry()
 
     if (!initialHeroAnimated) {
       initialHeroAnimated = true
@@ -312,11 +311,27 @@
       : 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
   )
 
+  /** Reopens whatever was on screen when the tab was closed. */
+  const resumeLastEntry = () => {
+    const entry = $history.find((item) => item.id === $settings.lastEntryId)
+    if (!entry) return
+
+    try {
+      result = cropSvg({ svgCode: entry.code })
+      source = entry.code
+      filename = entry.name
+      replaceState('', { view: 'result' })
+    } catch {
+      $settings.lastEntryId = null
+    }
+  }
+
   const openHistoryEntry = (entry: HistoryEntry) => {
     try {
       result = cropSvg({ svgCode: entry.code })
       source = entry.code
       filename = entry.name
+      $settings.lastEntryId = entry.id
       pushState('', { view: 'result' })
       scrollToTop()
     } catch (error) {
@@ -328,6 +343,7 @@
     source = ''
     result = null
     filename = 'cropped.svg'
+    $settings.lastEntryId = null
     replaceState('', {})
     scrollToTop()
   }
@@ -379,7 +395,7 @@
   <SvgPreview
     code={source}
     viewBox={result?.frame}
-    overlay={showCropArea ? box : null}
+    overlay={$settings.showCropArea ? box : null}
     class={previewClass}
   />
 {/snippet}
@@ -576,8 +592,8 @@
     </div>
 
     <Tabs
-      value={activeTab}
-      onValueChange={(v) => (activeTab = (v || 'compare') as 'compare' | 'code')}
+      value={$settings.activeTab}
+      onValueChange={(value) => ($settings.activeTab = (value || 'compare') as ResultTab)}
       class="gap-4"
     >
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -591,15 +607,20 @@
             <span>Code</span>
           </TabsTrigger>
         </TabsList>
-        {#if activeTab === 'compare'}
+        {#if $settings.activeTab === 'compare'}
           <div class="flex flex-wrap items-center gap-2">
             <label class="flex items-center gap-2.5 text-sm" title="Margin added around the crop">
               <span>Padding</span>
-              <Slider bind:value={padding} min={0} max={25} step={1} class="w-24" />
-              <span class="w-9 text-sm tabular-nums">{padding}%</span>
+              <Slider bind:value={$settings.padding} min={0} max={25} step={1} class="w-24" />
+              <span class="w-9 text-sm tabular-nums">{$settings.padding}%</span>
             </label>
             <Separator orientation="vertical" class="h-5" />
-            <ToggleGroup bind:value={previewBackground} aria-label="Preview background">
+            <ToggleGroup
+              value={$settings.previewBackground}
+              onValueChange={(value) =>
+                ($settings.previewBackground = (value || 'checker') as PreviewBackground)}
+              aria-label="Preview background"
+            >
               {#each backgroundOptions as option (option.value)}
                 <ToggleGroupItem value={option.value} title={option.label}>
                   <option.icon size={15} strokeWidth={1.5} />
@@ -612,7 +633,7 @@
               class="flex items-center gap-2.5 text-sm"
               title="Outline the bounding box and dim the empty space being removed"
             >
-              <Switch bind:checked={showCropArea} />
+              <Switch bind:checked={$settings.showCropArea} />
               <span>Show crop area</span>
             </label>
           </div>

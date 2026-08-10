@@ -49,13 +49,15 @@ if (browser) {
 }
 
 export const addToHistory = (entry: Omit<HistoryEntry, 'id' | 'createdAt'>) => {
-  if (byteSize(entry.code) > maxEntryBytes) return
+  if (byteSize(entry.code) > maxEntryBytes) return null
 
-  history.update((entries) => [
-    { ...entry, id: crypto.randomUUID(), createdAt: Date.now() },
-    ...entries.filter((existing) => existing.code !== entry.code),
-  ])
-  history.update((entries) => entries.slice(0, maxEntries))
+  const stored: HistoryEntry = { ...entry, id: crypto.randomUUID(), createdAt: Date.now() }
+
+  history.update((entries) =>
+    [stored, ...entries.filter((existing) => existing.code !== entry.code)].slice(0, maxEntries)
+  )
+
+  return stored
 }
 
 export const removeFromHistory = (id: string) => {
