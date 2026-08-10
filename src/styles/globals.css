@@ -34,14 +34,22 @@
 
 .hero-glow {
   background-image: radial-gradient(
-    ellipse 50% 45% at 50% 40%,
+    ellipse var(--glow-width) var(--glow-height) at 50% var(--glow-y),
     var(--glow-color) 0%,
-    transparent 70%
+    transparent var(--glow-stop)
   );
-  --glow-color: rgb(255 255 255 / 0.9);
+  --glow-width: 45%;
+  --glow-height: 38%;
+  --glow-y: 40%;
+  --glow-stop: 60%;
+  --glow-color: rgb(0 0 0 / 0.14);
 }
 
 :where(html.dark) .hero-glow {
+  --glow-width: 50%;
+  --glow-height: 45%;
+  --glow-y: 40%;
+  --glow-stop: 70%;
   --glow-color: rgb(64 64 64 / 0.35);
 }
 
