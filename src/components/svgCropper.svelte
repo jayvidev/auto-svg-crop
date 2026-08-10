@@ -4,11 +4,12 @@
 
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte'
+  import { pushState, replaceState } from '$app/navigation'
+  import { page } from '$app/state'
 
   import CopyIcon from '@lucide/svelte/icons/copy'
   import DownloadIcon from '@lucide/svelte/icons/download'
-  import FileUpIcon from '@lucide/svelte/icons/file-up'
-  import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw'
+  import EraserIcon from '@lucide/svelte/icons/eraser'
   import SparklesIcon from '@lucide/svelte/icons/sparkles'
   import UploadIcon from '@lucide/svelte/icons/upload'
   import { toast } from 'svelte-sonner'
@@ -17,6 +18,7 @@
   import Dropzone from '@/components/dropzone.svelte'
   import SvgPreview from '@/components/svgPreview.svelte'
   import { Button } from '@/components/ui/button'
+  import MovingFileUpIcon from '@/components/ui/moving-icons/file-up-icon.svelte'
   import { Separator } from '@/components/ui/separator'
   import { Switch } from '@/components/ui/switch'
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -28,6 +30,9 @@
   import { download } from '@/utils/download'
   import { optimizeSvg } from '@/utils/optimizeSvg'
   import { byteSize, formatBytes, readSvgFile } from '@/utils/readSvgFile'
+
+  const storageKey = 'auto_svg_crop_last'
+  const maxStoredBytes = 512 * 1024
 
   let fileInput = $state<HTMLInputElement | null>(null)
   let dragging = $state(false)
@@ -54,7 +59,7 @@
     }
   })
 
-  const process = (code: string, name?: string) => {
+  const process = async (code: string, name?: string) => {
     if (!code.includes('<svg')) {
       toast.error('That does not look like an SVG', {
         description: 'Paste <svg> code or drop a .svg file',
@@ -62,10 +67,13 @@
       return
     }
     try {
+      if (code.includes('<text')) await document.fonts.ready
       const cropped = cropSvg({ svgCode: code })
       source = code
       result = cropped
       if (name) filename = name.replace(/\.svg$/i, '') + '-crop.svg'
+      remember(code, filename)
+      pushState('', { view: 'result' })
       toast.success('SVG cropped', {
         description: `${Math.round(cropped.trimmed * 100)}% of the canvas was empty space`,
       })
@@ -152,6 +160,8 @@
   let hasAnimatedHero = $state(initialHeroAnimated)
 
   onMount(() => {
+    restore()
+
     if (!initialHeroAnimated) {
       initialHeroAnimated = true
       const timer = setTimeout(() => {
@@ -168,11 +178,44 @@
     hasAnimatedHero ? '' : 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
   )
 
+  const remember = (code: string, name: string) => {
+    try {
+      if (byteSize(code) > maxStoredBytes) {
+        localStorage.removeItem(storageKey)
+        return
+      }
+      localStorage.setItem(storageKey, JSON.stringify({ code, name }))
+    } catch {
+      // Private mode or quota exceeded: persistence is a nicety, not a feature.
+    }
+  }
+
+  const restore = () => {
+    try {
+      const stored = localStorage.getItem(storageKey)
+      if (!stored) return
+
+      const { code, name } = JSON.parse(stored) as { code?: string; name?: string }
+      if (!code) return
+
+      result = cropSvg({ svgCode: code })
+      source = code
+      filename = name ?? 'cropped.svg'
+      replaceState('', { view: 'result' })
+    } catch {
+      localStorage.removeItem(storageKey)
+    }
+  }
+
   const reset = () => {
     source = ''
     result = null
     filename = 'cropped.svg'
+    localStorage.removeItem(storageKey)
+    replaceState('', {})
   }
+
+  const showResult = $derived(Boolean(result) && page.state.view === 'result')
 </script>
 
 <svelte:window
@@ -193,13 +236,23 @@
 
 {#if dragging}
   <div
-    class="fixed inset-0 z-100 flex items-center justify-center bg-neutral-950/60 backdrop-blur-xs"
+    class="animate-in fade-in-0 fixed inset-0 z-100 flex items-center justify-center bg-neutral-100/80 p-6 backdrop-blur-sm duration-200 dark:bg-neutral-950/80"
   >
     <div
-      class="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-neutral-100 px-14 py-10 text-neutral-100"
+      class="zoom-in-95 animate-in flex w-full max-w-md flex-col items-center gap-4 rounded-xl border-2 border-dashed border-neutral-400 bg-white/80 px-8 py-12 text-center duration-200 dark:border-neutral-600 dark:bg-neutral-900/80"
     >
-      <FileUpIcon size={32} strokeWidth={1.5} />
-      <p class="text-lg font-medium">Drop the SVG anywhere</p>
+      <MovingFileUpIcon
+        size={32}
+        strokeWidth={1.5}
+        isHovered
+        class="text-neutral-500 dark:text-neutral-400"
+      />
+      <div class="space-y-1">
+        <p class="text-base font-medium sm:text-lg">Drop it anywhere</p>
+        <p class="text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">
+          Release to crop the SVG
+        </p>
+      </div>
     </div>
   </div>
 {/if}
@@ -256,7 +309,7 @@
   </div>
 {/snippet}
 
-{#if !result}
+{#if !showResult}
   <div class="relative flex flex-1 flex-col justify-center py-10">
     <div class="pointer-events-none absolute inset-0 -z-10 hero-glow" aria-hidden="true"></div>
 
@@ -288,7 +341,7 @@
       </Button>
     </div>
   </div>
-{:else}
+{:else if result}
   <div class="space-y-5 pt-6 animate-in fade-in-0 duration-300">
     <!-- Toolbar -->
     <div
@@ -308,7 +361,7 @@
           <span>New SVG</span>
         </Button>
         <Button variant="ghost" onclick={reset}>
-          <RotateCcwIcon size={15} strokeWidth={1.5} />
+          <EraserIcon size={15} strokeWidth={1.5} />
           <span>Clear</span>
         </Button>
       </div>

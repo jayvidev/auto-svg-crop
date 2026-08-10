@@ -52,14 +52,26 @@ const SHAPES = 'path, rect, circle, ellipse, line, polyline, polygon, text, imag
 
 const HIDDEN_PARENTS = 'defs, clipPath, mask, symbol, pattern, marker'
 
-const paints = (element: SVGGraphicsElement) => {
-  if (element.closest(HIDDEN_PARENTS)) return false
+const isVisible = (element: Element, root: SVGSVGElement) => {
+  let node: Element | null = element
 
-  const style = getComputedStyle(element)
-  if (style.display === 'none' || style.visibility === 'hidden') return false
-  if (Number(style.opacity) === 0) return false
+  while (node) {
+    const style = getComputedStyle(node)
+    if (style.display === 'none' || style.visibility === 'hidden') return false
+    if (Number(style.opacity) === 0) return false
+    if (node === root) break
+    node = node.parentElement
+  }
+
+  return true
+}
+
+const paints = (element: SVGGraphicsElement, root: SVGSVGElement) => {
+  if (element.closest(HIDDEN_PARENTS)) return false
+  if (!isVisible(element, root)) return false
   if (element.tagName === 'image' || element.tagName === 'use') return true
 
+  const style = getComputedStyle(element)
   const filled = style.fill !== 'none' && Number(style.fillOpacity) !== 0
   const stroked =
     style.stroke !== 'none' &&
@@ -74,7 +86,7 @@ const boxInRootSpace = (element: SVGGraphicsElement, root: SVGSVGElement): Box |
   const elementMatrix = element.getScreenCTM()
   if (!rootMatrix || !elementMatrix) return null
 
-  const box = element.getBBox({ stroke: true, markers: true })
+  const box = element.getBBox({ clipped: true, fill: true, stroke: true, markers: true })
   if (!box.width && !box.height) return null
 
   const toRoot = rootMatrix.inverse().multiply(elementMatrix)
@@ -95,7 +107,7 @@ const boxInRootSpace = (element: SVGGraphicsElement, root: SVGSVGElement): Box |
 
 const measure = (svg: SVGSVGElement): Box => {
   const boxes = Array.from(svg.querySelectorAll<SVGGraphicsElement>(SHAPES))
-    .filter(paints)
+    .filter((element) => paints(element, svg))
     .map((element) => boxInRootSpace(element, svg))
     .filter((box): box is Box => box !== null)
 

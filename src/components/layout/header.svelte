@@ -1,15 +1,28 @@
 <script lang="ts">
+  import { replaceState } from '$app/navigation'
+  import { page } from '$app/state'
+
   import ScissorsIcon from '@lucide/svelte/icons/scissors'
 
   import GithubLink from '@/components/githubLink.svelte'
   import ModeToggle from '@/components/modeToggle.svelte'
   import { buttonVariants } from '@/components/ui/button'
   import { cn } from '@/utils/cn'
+
+  const backToStart = (event: MouseEvent) => {
+    if (!page.state.view) return
+    event.preventDefault()
+    replaceState('', {})
+  }
 </script>
 
 <header class="sticky top-0 z-50 w-full bg-neutral-100 py-3 md:py-4 dark:bg-neutral-950">
   <nav class="mx-auto flex w-full max-w-6xl items-center justify-between px-4">
-    <a href="/" class="flex items-center space-x-2 text-base sm:text-lg font-medium tracking-tight">
+    <a
+      href="/"
+      onclick={backToStart}
+      class="flex items-center space-x-2 text-base font-medium tracking-tight sm:text-lg"
+    >
       <ScissorsIcon size={20} strokeWidth={1.5} />
       <span>Auto SVG Crop</span>
     </a>
