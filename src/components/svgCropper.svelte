@@ -91,6 +91,8 @@
     { value: 'dark', label: 'Black background', icon: MoonIcon },
   ] as const
 
+  const round = (value: number) => Math.round(value * 100) / 100
+
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' })
 
   const onKeydown = (event: KeyboardEvent) => {
@@ -123,14 +125,44 @@
 
   const stats = $derived.by(() => {
     if (!result) return null
+
     const before = byteSize(source)
+    const trimmedBytes = byteSize(cropped)
     const after = byteSize(output)
+
     return {
       before,
       after,
       saved: before > 0 ? Math.max(0, 1 - after / before) : 0,
+      byCrop: Math.max(0, before - trimmedBytes),
+      bySvgo: Math.max(0, trimmedBytes - after),
     }
   })
+
+  const trim = $derived.by(() => {
+    if (!result || !box) return null
+
+    const { frame } = result
+    return {
+      top: round(box.y - frame.y),
+      right: round(frame.x + frame.width - (box.x + box.width)),
+      bottom: round(frame.y + frame.height - (box.y + box.height)),
+      left: round(box.x - frame.x),
+    }
+  })
+
+  const ratio = $derived.by(() => {
+    if (!box || !box.width || !box.height) return '-'
+
+    return box.width >= box.height
+      ? `${round(box.width / box.height)}:1`
+      : `1:${round(box.height / box.width)}`
+  })
+
+  const copyValue = (value: string) => {
+    clipboard(value)
+    toast.success('Copied to clipboard', { description: value })
+  }
 
   const process = async (code: string, name?: string) => {
     if (!code.includes('<svg')) {
@@ -332,10 +364,44 @@
   <SvgPreview code={output} overlay={null} class={previewClass} />
 {/snippet}
 
-{#snippet stat(label: string, value: string)}
-  <div class="bg-white p-4 dark:bg-neutral-900">
-    <p class="text-xs text-neutral-500 dark:text-neutral-400">{label}</p>
-    <p class="mt-1 truncate font-mono text-sm" title={value}>{value}</p>
+{#snippet stat(label: string, value: string, copyable = false)}
+  {#if copyable}
+    <button
+      type="button"
+      onclick={() => copyValue(value)}
+      title={`${value} — click to copy`}
+      class="border-r border-b border-neutral-200 p-4 dark:border-neutral-800 cursor-pointer text-left transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/20"
+    >
+      <span class="block text-xs text-neutral-500 dark:text-neutral-400">{label}</span>
+      <span class="mt-1 block truncate font-mono text-sm">{value}</span>
+    </button>
+  {:else}
+    <div class="border-r border-b border-neutral-200 p-4 dark:border-neutral-800">
+      <p class="text-xs text-neutral-500 dark:text-neutral-400">{label}</p>
+      <p class="mt-1 truncate font-mono text-sm" title={value}>{value}</p>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet colorStat(colors: string[])}
+  <div class="border-r border-b border-neutral-200 p-4 dark:border-neutral-800">
+    <p class="text-xs text-neutral-500 dark:text-neutral-400">
+      {colors.length}
+      {colors.length === 1 ? 'color' : 'colors'}
+    </p>
+    <div class="mt-1.5 flex flex-wrap gap-1.5">
+      {#each colors.slice(0, 10) as color (color)}
+        <button
+          type="button"
+          onclick={() => copyValue(color)}
+          title={`${color} — click to copy`}
+          style={`background-color: ${color}`}
+          class="size-4 cursor-pointer rounded-sm border border-neutral-300 dark:border-neutral-600"
+        >
+          <span class="sr-only">{color}</span>
+        </button>
+      {/each}
+    </div>
   </div>
 {/snippet}
 
@@ -529,17 +595,39 @@
 
         <!-- Stats -->
         <div
-          class="grid gap-px overflow-hidden rounded-xl border border-neutral-200 bg-neutral-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-neutral-800 dark:bg-neutral-800"
+          class="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
         >
-          {@render stat('Original viewBox', result.originalViewBox ?? 'not defined')}
-          {@render stat('Cropped viewBox', result.croppedViewBox)}
-          {@render stat('Empty space', `${Math.round(result.trimmed * 100)}% removed`)}
-          {@render stat(
-            'Weight',
-            stats
-              ? `${formatBytes(stats.before)} → ${formatBytes(stats.after)} (-${Math.round(stats.saved * 100)}%)`
-              : '-'
-          )}
+          <div class="-mr-px -mb-px grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            {@render stat('Original viewBox', result.originalViewBox ?? 'not defined', true)}
+            {@render stat(
+              'Cropped viewBox',
+              box ? `${box.x} ${box.y} ${box.width} ${box.height}` : '-',
+              true
+            )}
+            {@render stat('Empty space', `${Math.round(result.trimmed * 100)}% removed`)}
+            {@render stat(
+              'Trimmed sides',
+              trim ? `${trim.top} / ${trim.right} / ${trim.bottom} / ${trim.left}` : '-'
+            )}
+            {@render stat('Aspect ratio', ratio)}
+            {@render stat(
+              'Complexity',
+              `${result.elements} ${result.elements === 1 ? 'element' : 'elements'} · ${result.pathNodes} nodes`
+            )}
+            {#if result.colors.length}
+              {@render colorStat(result.colors)}
+            {/if}
+            {@render stat(
+              'Weight',
+              stats
+                ? `${formatBytes(stats.before)} → ${formatBytes(stats.after)} (-${Math.round(stats.saved * 100)}%)`
+                : '-'
+            )}
+            {@render stat(
+              'Saved by',
+              stats ? `crop ${formatBytes(stats.byCrop)} · SVGO ${formatBytes(stats.bySvgo)}` : '-'
+            )}
+          </div>
         </div>
 
         {#if result.warnings.length}

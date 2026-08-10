@@ -19,6 +19,9 @@ export interface CropSvgResult {
   width: number
   height: number
   trimmed: number
+  colors: string[]
+  elements: number
+  pathNodes: number
   warnings: SvgWarning[]
 }
 
@@ -111,6 +114,41 @@ const boxInRootSpace = (element: SVGGraphicsElement, root: SVGSVGElement): Box |
   return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y }
 }
 
+const toHex = (color: string) => {
+  const channels = color.match(/rgba?\(([^)]+)\)/)
+  if (!channels) return color
+
+  const [red, green, blue, alpha] = channels[1].split(',').map((value) => parseFloat(value))
+  if (alpha === 0) return ''
+
+  return `#${[red, green, blue]
+    .map((channel) => Math.round(channel).toString(16).padStart(2, '0'))
+    .join('')}`
+}
+
+const collectColors = (painted: SVGGraphicsElement[]) => {
+  const colors = new Set<string>()
+
+  for (const element of painted) {
+    const style = getComputedStyle(element)
+
+    for (const paint of [style.fill, style.stroke]) {
+      if (!paint || paint === 'none' || paint.startsWith('url(')) continue
+
+      const hex = toHex(paint)
+      if (hex) colors.add(hex.toLowerCase())
+    }
+  }
+
+  return Array.from(colors)
+}
+
+const countPathNodes = (svg: SVGSVGElement) =>
+  Array.from(svg.querySelectorAll('path')).reduce(
+    (total, path) => total + (path.getAttribute('d')?.match(/[a-df-z]/gi)?.length ?? 0),
+    0
+  )
+
 const measure = (svg: SVGSVGElement) => {
   const shapes = Array.from(svg.querySelectorAll<SVGGraphicsElement>(SHAPES))
   const painted = shapes.filter((element) => paints(element, svg))
@@ -120,14 +158,18 @@ const measure = (svg: SVGSVGElement) => {
     .map((element) => boxInRootSpace(element, svg))
     .filter((box): box is Box => box !== null)
 
-  if (!boxes.length) return { box: svg.getBBox(), ignored }
+  if (!boxes.length) return { box: svg.getBBox(), ignored, painted }
 
   const minX = Math.min(...boxes.map((box) => box.x))
   const minY = Math.min(...boxes.map((box) => box.y))
   const maxX = Math.max(...boxes.map((box) => box.x + box.width))
   const maxY = Math.max(...boxes.map((box) => box.y + box.height))
 
-  return { box: { x: minX, y: minY, width: maxX - minX, height: maxY - minY }, ignored }
+  return {
+    box: { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
+    ignored,
+    painted,
+  }
 }
 
 const collectWarnings = (svg: SVGSVGElement, ignored: number): SvgWarning[] => {
@@ -203,7 +245,7 @@ export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
 
   try {
     const originalViewBox = svg.getAttribute('viewBox')
-    const { box: bbox, ignored } = measure(svg)
+    const { box: bbox, ignored, painted } = measure(svg)
 
     if (!bbox.width || !bbox.height) {
       throw new Error('The SVG has no visible content to crop')
@@ -233,6 +275,9 @@ export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
       width: crop.width,
       height: crop.height,
       trimmed: frameArea > 0 ? Math.max(0, 1 - cropArea / frameArea) : 0,
+      colors: collectColors(painted),
+      elements: painted.length,
+      pathNodes: countPathNodes(svg),
       warnings: collectWarnings(svg, ignored),
     }
   } finally {
