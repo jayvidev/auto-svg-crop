@@ -475,7 +475,7 @@
       </h1>
       <p
         class={cn(
-          'text-sm text-neutral-500 text-pretty sm:text-base dark:text-neutral-400',
+          'mx-auto max-w-2xl text-sm text-neutral-500 text-pretty sm:text-base dark:text-neutral-400',
           heroEnter,
           !hasAnimatedHero && 'delay-100'
         )}
