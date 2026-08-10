@@ -471,7 +471,7 @@
 
     <section class="space-y-2 pb-8 text-center">
       <h1 class={cn('text-2xl font-semibold tracking-tight text-balance sm:text-4xl', heroEnter)}>
-        Trim the empty space around your SVGs
+        Crop, pad and optimize your SVGs
       </h1>
       <p
         class={cn(
@@ -480,9 +480,9 @@
           !hasAnimatedHero && 'delay-100'
         )}
       >
-        Measures the real bounding box with
-        <code class="font-mono">getBBox()</code> and rewrites the
-        <code class="font-mono">viewBox</code> to fit the visible content.
+        Measures the real painted bounding box and rewrites the
+        <code class="font-mono">viewBox</code> to fit the artwork. Add padding, optimize with SVGO and
+        copy it in the format you need.
       </p>
     </section>
 
