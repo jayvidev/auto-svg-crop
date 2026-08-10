@@ -9,13 +9,14 @@
 
   import CopyIcon from '@lucide/svelte/icons/copy'
   import DownloadIcon from '@lucide/svelte/icons/download'
-  import EraserIcon from '@lucide/svelte/icons/eraser'
   import SparklesIcon from '@lucide/svelte/icons/sparkles'
   import UploadIcon from '@lucide/svelte/icons/upload'
+  import XIcon from '@lucide/svelte/icons/x'
   import { toast } from 'svelte-sonner'
 
   import CodeBlock from '@/components/codeBlock.svelte'
   import Dropzone from '@/components/dropzone.svelte'
+  import History from '@/components/history.svelte'
   import SvgPreview from '@/components/svgPreview.svelte'
   import { Button } from '@/components/ui/button'
   import MovingFileUpIcon from '@/components/ui/moving-icons/file-up-icon.svelte'
@@ -23,6 +24,7 @@
   import { Switch } from '@/components/ui/switch'
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
   import { exampleSvg } from '@/data/example'
+  import { addToHistory, type HistoryEntry } from '@/stores/history.store'
   import { settings } from '@/stores/settings.store'
   import { clipboard } from '@/utils/clipboard'
   import { cn } from '@/utils/cn'
@@ -30,9 +32,6 @@
   import { download } from '@/utils/download'
   import { optimizeSvg } from '@/utils/optimizeSvg'
   import { byteSize, formatBytes, readSvgFile } from '@/utils/readSvgFile'
-
-  const storageKey = 'auto_svg_crop_last'
-  const maxStoredBytes = 512 * 1024
 
   let fileInput = $state<HTMLInputElement | null>(null)
   let dragging = $state(false)
@@ -72,7 +71,13 @@
       source = code
       result = cropped
       if (name) filename = name.replace(/\.svg$/i, '') + '-crop.svg'
-      remember(code, filename)
+      addToHistory({
+        name: filename,
+        code,
+        crop: cropped.crop,
+        width: cropped.width,
+        height: cropped.height,
+      })
       pushState('', { view: 'result' })
       toast.success('SVG cropped', {
         description: `${Math.round(cropped.trimmed * 100)}% of the canvas was empty space`,
@@ -160,8 +165,6 @@
   let hasAnimatedHero = $state(initialHeroAnimated)
 
   onMount(() => {
-    restore()
-
     if (!initialHeroAnimated) {
       initialHeroAnimated = true
       const timer = setTimeout(() => {
@@ -178,32 +181,14 @@
     hasAnimatedHero ? '' : 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
   )
 
-  const remember = (code: string, name: string) => {
+  const openHistoryEntry = (entry: HistoryEntry) => {
     try {
-      if (byteSize(code) > maxStoredBytes) {
-        localStorage.removeItem(storageKey)
-        return
-      }
-      localStorage.setItem(storageKey, JSON.stringify({ code, name }))
-    } catch {
-      // Private mode or quota exceeded: persistence is a nicety, not a feature.
-    }
-  }
-
-  const restore = () => {
-    try {
-      const stored = localStorage.getItem(storageKey)
-      if (!stored) return
-
-      const { code, name } = JSON.parse(stored) as { code?: string; name?: string }
-      if (!code) return
-
-      result = cropSvg({ svgCode: code })
-      source = code
-      filename = name ?? 'cropped.svg'
-      replaceState('', { view: 'result' })
-    } catch {
-      localStorage.removeItem(storageKey)
+      result = cropSvg({ svgCode: entry.code })
+      source = entry.code
+      filename = entry.name
+      pushState('', { view: 'result' })
+    } catch (error) {
+      toast.error('Could not reopen', { description: (error as Error).message })
     }
   }
 
@@ -211,7 +196,6 @@
     source = ''
     result = null
     filename = 'cropped.svg'
-    localStorage.removeItem(storageKey)
     replaceState('', {})
   }
 
@@ -340,6 +324,8 @@
         <span>Try it with an example</span>
       </Button>
     </div>
+
+    <History onSelect={openHistoryEntry} />
   </div>
 {:else if result}
   <div class="space-y-5 pt-6 animate-in fade-in-0 duration-300">
@@ -360,15 +346,23 @@
           <UploadIcon size={15} strokeWidth={1.5} />
           <span>New SVG</span>
         </Button>
-        <Button variant="ghost" onclick={reset}>
-          <EraserIcon size={15} strokeWidth={1.5} />
-          <span>Clear</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2.5 text-sm">
+          <Switch bind:checked={$settings.optimizeSvgs} />
+          <span>Optimize with SVGO</span>
+        </label>
+        <Separator orientation="vertical" class="h-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onclick={reset}
+          title="Back to start — this crop stays in Recent"
+        >
+          <XIcon size={16} strokeWidth={1.5} />
+          <span class="sr-only">Back to start</span>
         </Button>
       </div>
-      <label class="flex items-center gap-2.5 text-sm sm:pr-1">
-        <Switch bind:checked={$settings.optimizeSvgs} />
-        <span>Optimize with SVGO</span>
-      </label>
     </div>
 
     <Tabs
