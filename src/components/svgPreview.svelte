@@ -38,7 +38,7 @@
     </div>
     {#if overlay && frame}
       <svg
-        class="pointer-events-none absolute inset-0 h-full w-full text-neutral-900 dark:text-neutral-100"
+        class="pointer-events-none absolute inset-0 h-full w-full"
         viewBox={`${frame.x} ${frame.y} ${frame.width} ${frame.height}`}
         preserveAspectRatio="xMidYMid meet"
         aria-hidden="true"

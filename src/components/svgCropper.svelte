@@ -63,9 +63,9 @@
   type PreviewBackground = 'checker' | 'light' | 'dark'
 
   const backgrounds = {
-    checker: 'checkerboard',
-    light: 'bg-white',
-    dark: 'bg-neutral-950',
+    checker: 'checkerboard text-neutral-900 dark:text-neutral-100',
+    light: 'bg-white text-neutral-900',
+    dark: 'bg-neutral-950 text-neutral-100',
   } as const
 
   const previewClass = $derived(cn(backgrounds[previewBackground] ?? backgrounds.checker, 'h-72'))
@@ -370,9 +370,16 @@
       type="button"
       onclick={() => copyValue(value)}
       title={`${value} — click to copy`}
-      class="border-r border-b border-neutral-200 p-4 dark:border-neutral-800 cursor-pointer text-left transition-colors hover:bg-neutral-100/80 dark:hover:bg-neutral-800/20"
+      class="group/stat cursor-pointer border-r border-b border-neutral-200 p-4 text-left transition-colors hover:bg-neutral-100/80 dark:border-neutral-800 dark:hover:bg-neutral-800/20"
     >
-      <span class="block text-xs text-neutral-500 dark:text-neutral-400">{label}</span>
+      <span class="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+        {label}
+        <CopyIcon
+          size={12}
+          strokeWidth={1.5}
+          class="opacity-0 transition-opacity group-hover/stat:opacity-100"
+        />
+      </span>
       <span class="mt-1 block truncate font-mono text-sm">{value}</span>
     </button>
   {:else}
