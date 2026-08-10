@@ -18,8 +18,10 @@
 <Sonner />
 <div class="flex min-h-svh flex-col">
   <Header />
-  <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4">
-    {@render children?.()}
-  </main>
+  <div class="flex flex-1 flex-col px-4 w-full">
+    <main class="mx-auto flex w-full max-w-6xl flex-1 flex-col">
+      {@render children?.()}
+    </main>
+  </div>
   <Footer />
 </div>

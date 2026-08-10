@@ -16,8 +16,8 @@
   }
 </script>
 
-<header class="sticky top-0 z-50 w-full bg-neutral-100 py-3 md:py-4 dark:bg-neutral-950">
-  <nav class="mx-auto flex w-full max-w-6xl items-center justify-between px-4">
+<header class="sticky top-0 z-50 w-full bg-neutral-100 py-3 md:py-4 px-4 dark:bg-neutral-950">
+  <nav class="mx-auto flex w-full max-w-6xl items-center justify-between">
     <a
       href="/"
       onclick={backToStart}

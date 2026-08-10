@@ -7,9 +7,17 @@
   import { pushState, replaceState } from '$app/navigation'
   import { page } from '$app/state'
 
+  import ChevronDownIcon from '@lucide/svelte/icons/chevron-down'
+  import CodeIcon from '@lucide/svelte/icons/code-xml'
+  import ColumnsIcon from '@lucide/svelte/icons/columns-2'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import DownloadIcon from '@lucide/svelte/icons/download'
+  import Grid2x2Icon from '@lucide/svelte/icons/grid-2x2'
+  import LinkIcon from '@lucide/svelte/icons/link'
+  import MoonIcon from '@lucide/svelte/icons/moon'
   import SparklesIcon from '@lucide/svelte/icons/sparkles'
+  import SunIcon from '@lucide/svelte/icons/sun'
+  import TriangleAlertIcon from '@lucide/svelte/icons/triangle-alert'
   import UploadIcon from '@lucide/svelte/icons/upload'
   import XIcon from '@lucide/svelte/icons/x'
   import { toast } from 'svelte-sonner'
@@ -17,19 +25,26 @@
   import CodeBlock from '@/components/codeBlock.svelte'
   import Dropzone from '@/components/dropzone.svelte'
   import History from '@/components/history.svelte'
+  import Css from '@/components/logos/css.svelte'
+  import React from '@/components/logos/react.svelte'
   import SvgPreview from '@/components/svgPreview.svelte'
-  import { Button } from '@/components/ui/button'
+  import { Button, buttonVariants } from '@/components/ui/button'
+  import * as DropdownMenu from '@/components/ui/dropdown-menu'
+  import { Kbd } from '@/components/ui/kbd'
   import MovingFileUpIcon from '@/components/ui/moving-icons/file-up-icon.svelte'
   import { Separator } from '@/components/ui/separator'
+  import { Slider } from '@/components/ui/slider'
   import { Switch } from '@/components/ui/switch'
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+  import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
   import { exampleSvg } from '@/data/example'
   import { addToHistory, type HistoryEntry } from '@/stores/history.store'
   import { settings } from '@/stores/settings.store'
   import { clipboard } from '@/utils/clipboard'
   import { cn } from '@/utils/cn'
-  import { cropSvg, type CropSvgResult } from '@/utils/cropSvg'
+  import { type Box, cropSvg, type CropSvgResult, expandBox, withViewBox } from '@/utils/cropSvg'
   import { download } from '@/utils/download'
+  import { componentName, type ExportFormat, formatSvg } from '@/utils/exportSvg'
   import { optimizeSvg } from '@/utils/optimizeSvg'
   import { byteSize, formatBytes, readSvgFile } from '@/utils/readSvgFile'
 
@@ -42,10 +57,67 @@
   let result = $state<CropSvgResult | null>(null)
   let showCropArea = $state(true)
   let activeTab = $state<'compare' | 'code'>('compare')
+  let padding = $state(0)
+  let previewBackground = $state<PreviewBackground>('checker')
+
+  type PreviewBackground = 'checker' | 'light' | 'dark'
+
+  const backgrounds = {
+    checker: 'checkerboard',
+    light: 'bg-white',
+    dark: 'bg-neutral-950',
+  } as const
+
+  const previewClass = $derived(cn(backgrounds[previewBackground] ?? backgrounds.checker, 'h-72'))
+
+  const box = $derived<Box | null>(result ? expandBox(result.crop, padding) : null)
+
+  const cropped = $derived(result && box ? withViewBox(result.svg, box) : '')
 
   const output = $derived(
-    result ? ($settings.optimizeSvgs ? optimizeSvg({ svgCode: result.svg }) : result.svg) : ''
+    cropped ? ($settings.optimizeSvgs ? optimizeSvg({ svgCode: cropped }) : cropped) : ''
   )
+
+  const shortcuts = [
+    { keys: '⌘/Ctrl + C', label: 'copy' },
+    { keys: '⌘/Ctrl + S', label: 'download' },
+    { keys: '⌘/Ctrl + V', label: 'paste another SVG' },
+    { keys: 'Esc', label: 'back to start' },
+  ]
+
+  const backgroundOptions = [
+    { value: 'checker', label: 'Checkerboard', icon: Grid2x2Icon },
+    { value: 'light', label: 'White background', icon: SunIcon },
+    { value: 'dark', label: 'Black background', icon: MoonIcon },
+  ] as const
+
+  const onKeydown = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement | null
+    if (target?.closest("input, textarea, [contenteditable='true']")) return
+    if (!result) return
+
+    if (event.key === 'Escape') {
+      reset()
+      return
+    }
+
+    if (!event.metaKey && !event.ctrlKey) return
+
+    if (event.key === 's') {
+      event.preventDefault()
+      save()
+    }
+
+    if (event.key === 'c' && !window.getSelection()?.toString()) {
+      event.preventDefault()
+      copy()
+    }
+  }
+
+  const copyAs = (format: ExportFormat, label: string) => {
+    clipboard(formatSvg(output, format, componentName(filename)))
+    toast.success(`Copied as ${label}`)
+  }
 
   const stats = $derived.by(() => {
     if (!result) return null
@@ -203,6 +275,7 @@
 </script>
 
 <svelte:window
+  onkeydown={onKeydown}
   onpaste={onPaste}
   ondragenter={onDragEnter}
   ondragover={onDragOver}
@@ -245,13 +318,13 @@
   <SvgPreview
     code={source}
     viewBox={result?.frame}
-    overlay={showCropArea ? result?.crop : null}
-    class="checkerboard h-72"
+    overlay={showCropArea ? box : null}
+    class={previewClass}
   />
 {/snippet}
 
 {#snippet after()}
-  <SvgPreview code={output} overlay={null} class="checkerboard h-72" />
+  <SvgPreview code={output} overlay={null} class={previewClass} />
 {/snippet}
 
 {#snippet stat(label: string, value: string)}
@@ -264,12 +337,11 @@
 {#snippet code()}
   <div>
     <div
-      class="flex items-center justify-end gap-2 border-b border-neutral-200 px-3 py-1.5 dark:border-neutral-800"
+      class="flex items-center justify-between gap-2 border-b border-neutral-200 px-3 py-1.5 dark:border-neutral-800"
     >
       <span class="font-mono text-xs text-neutral-500 dark:text-neutral-400">
         {formatBytes(byteSize(output))}
       </span>
-      <Separator orientation="vertical" class="h-5" />
       <Button variant="ghost" size="sm" onclick={copy}>
         <CopyIcon size={14} strokeWidth={1.5} />
         <span>Copy</span>
@@ -325,7 +397,10 @@
       </Button>
     </div>
 
-    <History onSelect={openHistoryEntry} />
+    <History
+      onSelect={openHistoryEntry}
+      class={cn(heroEnter, !hasAnimatedHero && 'delay-[400ms]')}
+    />
   </div>
 {:else if result}
   <div class="space-y-5 pt-6 animate-in fade-in-0 duration-300">
@@ -334,10 +409,38 @@
       class="sticky top-16 z-40 flex flex-col gap-4 rounded-xl border border-neutral-200 bg-white/90 p-3 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between dark:border-neutral-800 dark:bg-neutral-900/90"
     >
       <div class="flex flex-wrap items-center gap-2">
-        <Button onclick={copy}>
-          <CopyIcon size={15} strokeWidth={1.5} />
-          <span>Copy</span>
-        </Button>
+        <div class="flex items-center">
+          <Button onclick={copy} class="rounded-r-none">
+            <CopyIcon size={15} strokeWidth={1.5} />
+            <span>Copy</span>
+          </Button>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger
+              class={cn(buttonVariants(), 'rounded-l-none border-l border-neutral-700 px-2')}
+              title="Copy as another format"
+            >
+              <ChevronDownIcon size={15} strokeWidth={1.5} />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start">
+              <DropdownMenu.Item onclick={() => copyAs('svg', 'SVG')}>
+                <CodeIcon size={15} strokeWidth={1.5} />
+                <span>SVG</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => copyAs('dataUri', 'data URI')}>
+                <LinkIcon size={15} strokeWidth={1.5} />
+                <span>Data URI</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => copyAs('css', 'CSS')}>
+                <Css size={15} />
+                <span>CSS background</span>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => copyAs('react', 'React')}>
+                <React size={15} />
+                <span>React component</span>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </div>
         <Button variant="outline" onclick={save}>
           <DownloadIcon size={15} strokeWidth={1.5} />
           <span>Download</span>
@@ -372,17 +475,40 @@
     >
       <div class="flex flex-wrap items-center justify-between gap-3">
         <TabsList>
-          <TabsTrigger value="compare">Compare</TabsTrigger>
-          <TabsTrigger value="code">Code</TabsTrigger>
+          <TabsTrigger value="compare" class="gap-1.5">
+            <ColumnsIcon size={14} strokeWidth={1.5} />
+            <span>Compare</span>
+          </TabsTrigger>
+          <TabsTrigger value="code" class="gap-1.5">
+            <CodeIcon size={14} strokeWidth={1.5} />
+            <span>Code</span>
+          </TabsTrigger>
         </TabsList>
         {#if activeTab === 'compare'}
-          <label
-            class="flex items-center gap-2.5 text-sm"
-            title="Outline the bounding box and dim the empty space being removed"
-          >
-            <Switch bind:checked={showCropArea} />
-            <span>Show crop area</span>
-          </label>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="flex items-center gap-2.5 text-sm" title="Margin added around the crop">
+              <span>Padding</span>
+              <Slider bind:value={padding} min={0} max={25} step={1} class="w-24" />
+              <span class="w-9 text-sm tabular-nums">{padding}%</span>
+            </label>
+            <Separator orientation="vertical" class="h-5" />
+            <ToggleGroup bind:value={previewBackground} aria-label="Preview background">
+              {#each backgroundOptions as option (option.value)}
+                <ToggleGroupItem value={option.value} title={option.label}>
+                  <option.icon size={15} strokeWidth={1.5} />
+                  <span class="sr-only">{option.label}</span>
+                </ToggleGroupItem>
+              {/each}
+            </ToggleGroup>
+            <Separator orientation="vertical" class="h-5" />
+            <label
+              class="flex items-center gap-2.5 text-sm"
+              title="Outline the bounding box and dim the empty space being removed"
+            >
+              <Switch bind:checked={showCropArea} />
+              <span>Show crop area</span>
+            </label>
+          </div>
         {/if}
       </div>
 
@@ -393,7 +519,7 @@
             `${result.frame.width} × ${result.frame.height} · ${Math.round(result.trimmed * 100)}% empty`,
             before
           )}
-          {@render card('After', `${result.width} × ${result.height}`, after)}
+          {@render card('After', box ? `${box.width} × ${box.height}` : '', after)}
         </div>
 
         <!-- Stats -->
@@ -410,11 +536,43 @@
               : '-'
           )}
         </div>
+
+        {#if result.warnings.length}
+          <div
+            class="space-y-2 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
+          >
+            <p
+              class="flex items-center gap-2 text-sm font-medium text-neutral-500 dark:text-neutral-400"
+            >
+              <TriangleAlertIcon size={14} strokeWidth={1.5} />
+              <span>Worth knowing</span>
+            </p>
+            <ul class="space-y-1">
+              {#each result.warnings as warning (warning.title)}
+                <li class="text-sm">
+                  <span class="font-medium">{warning.title}</span>
+                  <span class="text-neutral-500 dark:text-neutral-400"> — {warning.detail}</span>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
       </TabsContent>
 
       <TabsContent value="code" class="animate-in fade-in-0 duration-300">
         {@render card('Result', filename, code)}
       </TabsContent>
     </Tabs>
+
+    <p
+      class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-1 text-xs text-neutral-500 dark:text-neutral-400"
+    >
+      {#each shortcuts as shortcut (shortcut.keys)}
+        <span class="flex items-center gap-1.5">
+          <Kbd>{shortcut.keys}</Kbd>
+          {shortcut.label}
+        </span>
+      {/each}
+    </p>
   </div>
 {/if}

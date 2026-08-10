@@ -14,13 +14,14 @@
 
   interface Props {
     onSelect: (entry: HistoryEntry) => void
+    class?: string | undefined | null
   }
 
-  let { onSelect }: Props = $props()
+  let { onSelect, class: className }: Props = $props()
 </script>
 
 {#if $history.length}
-  <section class="mt-10 space-y-3">
+  <section class={cn('mt-10 space-y-3', className)}>
     <div class="flex items-center justify-between">
       <h2 class="flex items-center gap-2 text-sm font-medium">
         <HistoryIcon size={15} strokeWidth={1.5} />

@@ -5,6 +5,11 @@ export interface Box {
   height: number
 }
 
+export interface SvgWarning {
+  title: string
+  detail: string
+}
+
 export interface CropSvgResult {
   svg: string
   originalViewBox: string | null
@@ -14,6 +19,7 @@ export interface CropSvgResult {
   width: number
   height: number
   trimmed: number
+  warnings: SvgWarning[]
 }
 
 interface CropSvg {
@@ -105,20 +111,81 @@ const boxInRootSpace = (element: SVGGraphicsElement, root: SVGSVGElement): Box |
   return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y }
 }
 
-const measure = (svg: SVGSVGElement): Box => {
-  const boxes = Array.from(svg.querySelectorAll<SVGGraphicsElement>(SHAPES))
-    .filter((element) => paints(element, svg))
+const measure = (svg: SVGSVGElement) => {
+  const shapes = Array.from(svg.querySelectorAll<SVGGraphicsElement>(SHAPES))
+  const painted = shapes.filter((element) => paints(element, svg))
+  const ignored = shapes.length - painted.length
+
+  const boxes = painted
     .map((element) => boxInRootSpace(element, svg))
     .filter((box): box is Box => box !== null)
 
-  if (!boxes.length) return svg.getBBox()
+  if (!boxes.length) return { box: svg.getBBox(), ignored }
 
   const minX = Math.min(...boxes.map((box) => box.x))
   const minY = Math.min(...boxes.map((box) => box.y))
   const maxX = Math.max(...boxes.map((box) => box.x + box.width))
   const maxY = Math.max(...boxes.map((box) => box.y + box.height))
 
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+  return { box: { x: minX, y: minY, width: maxX - minX, height: maxY - minY }, ignored }
+}
+
+const collectWarnings = (svg: SVGSVGElement, ignored: number): SvgWarning[] => {
+  const warnings: SvgWarning[] = []
+  const ids = svg.querySelectorAll('[id]').length
+
+  if (ignored > 0) {
+    warnings.push({
+      title: `${ignored} invisible ${ignored === 1 ? 'element' : 'elements'} ignored`,
+      detail: 'Shapes with no fill or stroke were left out of the bounding box.',
+    })
+  }
+
+  if (ids > 0) {
+    warnings.push({
+      title: `${ids} ${ids === 1 ? 'id' : 'ids'} in the markup`,
+      detail: 'Ids clash when several SVGs are inlined on the same page.',
+    })
+  }
+
+  if (svg.querySelector('style')) {
+    warnings.push({
+      title: 'Contains a <style> block',
+      detail: 'Its rules leak into the page once the SVG is inlined.',
+    })
+  }
+
+  if (svg.querySelector('[filter], filter')) {
+    warnings.push({
+      title: 'Uses filters',
+      detail: 'Effects such as blur or drop shadow can paint outside the measured box.',
+    })
+  }
+
+  return warnings
+}
+
+export const expandBox = (box: Box, padding: number, precision = 2): Box => {
+  const amount = (Math.max(box.width, box.height) * padding) / 100
+
+  return roundBox(
+    {
+      x: box.x - amount,
+      y: box.y - amount,
+      width: box.width + amount * 2,
+      height: box.height + amount * 2,
+    },
+    precision
+  )
+}
+
+export const withViewBox = (svgCode: string, box: Box): string => {
+  const doc = new DOMParser().parseFromString(svgCode, 'image/svg+xml')
+  const svg = doc.documentElement
+  if (svg.nodeName !== 'svg' || doc.querySelector('parsererror')) return svgCode
+
+  svg.setAttribute('viewBox', boxToViewBox(box))
+  return svg.outerHTML
 }
 
 export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
@@ -136,7 +203,7 @@ export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
 
   try {
     const originalViewBox = svg.getAttribute('viewBox')
-    const bbox = measure(svg)
+    const { box: bbox, ignored } = measure(svg)
 
     if (!bbox.width || !bbox.height) {
       throw new Error('The SVG has no visible content to crop')
@@ -166,6 +233,7 @@ export const cropSvg = ({ svgCode, precision = 2 }: CropSvg): CropSvgResult => {
       width: crop.width,
       height: crop.height,
       trimmed: frameArea > 0 ? Math.max(0, 1 - cropArea / frameArea) : 0,
+      warnings: collectWarnings(svg, ignored),
     }
   } finally {
     container.remove()
