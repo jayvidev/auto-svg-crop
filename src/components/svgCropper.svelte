@@ -288,9 +288,12 @@
     download({ content: output, filename, mimeType: 'image/svg+xml' })
   }
 
+  let hydrated = $state(false)
   let hasAnimatedHero = $state(initialHeroAnimated)
 
   onMount(() => {
+    hydrated = true
+
     if (!initialHeroAnimated) {
       initialHeroAnimated = true
       const timer = setTimeout(() => {
@@ -304,7 +307,9 @@
    * Staggered entrance only on initial page load.
    */
   const heroEnter = $derived(
-    hasAnimatedHero ? '' : 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
+    !hydrated || hasAnimatedHero
+      ? ''
+      : 'animate-in fade-in-0 slide-in-from-bottom-3 fill-mode-both duration-500'
   )
 
   const openHistoryEntry = (entry: HistoryEntry) => {
@@ -466,35 +471,37 @@
 {/snippet}
 
 {#if !showResult}
-  <div class="relative flex flex-1 flex-col justify-center py-10">
-    <div class="pointer-events-none absolute inset-0 -z-10 hero-glow" aria-hidden="true"></div>
+  <div class={cn('flex flex-1 flex-col py-10', !hydrated && 'opacity-0')} data-landing>
+    <div class="relative flex flex-1 flex-col justify-center">
+      <div class="pointer-events-none absolute inset-0 -z-10 hero-glow" aria-hidden="true"></div>
 
-    <section class="space-y-2 pb-8 text-center">
-      <h1 class={cn('text-2xl font-semibold tracking-tight text-balance sm:text-4xl', heroEnter)}>
-        Crop, pad and optimize your SVGs
-      </h1>
-      <p
-        class={cn(
-          'mx-auto max-w-2xl text-sm text-neutral-500 text-pretty sm:text-base dark:text-neutral-400',
-          heroEnter,
-          !hasAnimatedHero && 'delay-100'
-        )}
-      >
-        Measures the real painted bounding box and rewrites the
-        <code class="font-mono">viewBox</code> to fit the artwork. Add padding, optimize with SVGO and
-        copy it in the format you need.
-      </p>
-    </section>
+      <section class="space-y-2 pb-8 text-center">
+        <h1 class={cn('text-2xl font-semibold tracking-tight text-balance sm:text-4xl', heroEnter)}>
+          Crop, pad and optimize your SVGs
+        </h1>
+        <p
+          class={cn(
+            'mx-auto max-w-2xl text-sm text-neutral-500 text-pretty sm:text-base dark:text-neutral-400',
+            heroEnter,
+            !hasAnimatedHero && 'delay-100'
+          )}
+        >
+          Measures the real painted bounding box and rewrites the
+          <code class="font-mono">viewBox</code> to fit the artwork. Add padding, optimize with SVGO and
+          copy it in the format you need.
+        </p>
+      </section>
 
-    <div class={cn(heroEnter, !hasAnimatedHero && 'delay-200')}>
-      <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
-    </div>
+      <div class={cn(heroEnter, !hasAnimatedHero && 'delay-200')}>
+        <Dropzone {dragging} onPickFile={() => fileInput?.click()} />
+      </div>
 
-    <div class={cn('mt-4 flex justify-center', heroEnter, !hasAnimatedHero && 'delay-300')}>
-      <Button variant="ghost" size="sm" onclick={() => process(exampleSvg, 'example.svg')}>
-        <SparklesIcon size={14} strokeWidth={1.5} />
-        <span>Try it with an example</span>
-      </Button>
+      <div class={cn('mt-4 flex justify-center', heroEnter, !hasAnimatedHero && 'delay-300')}>
+        <Button variant="ghost" size="sm" onclick={() => process(exampleSvg, 'example.svg')}>
+          <SparklesIcon size={14} strokeWidth={1.5} />
+          <span>Try it with an example</span>
+        </Button>
+      </div>
     </div>
 
     <History
