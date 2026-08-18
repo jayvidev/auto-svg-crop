@@ -45,5 +45,6 @@
     "**/build": true,
     "**/dist": true,
     "**/node_modules": true
-  }
+  },
+  "css.lint.unknownAtRules": "ignore"
 }
